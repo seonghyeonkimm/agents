@@ -35,13 +35,28 @@
         "./commands/add-feature.md",
         "./commands/recommend-agent.md"
       ],
-      "agents": [],
+      "agents": [
+        "./agents/workflow-starter.md"
+      ],
       "skills": [
         "./skills/create-init-sh",
         "./skills/create-feature-list",
         "./skills/create-progress-log",
         "./skills/create-spec-doc"
-      ]
+      ],
+      "hooks": {
+        "SessionStart": [
+          {
+            "matcher": "startup",
+            "hooks": [
+              {
+                "type": "command",
+                "command": "${CLAUDE_PLUGIN_ROOT}/scripts/session-start.sh"
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }
