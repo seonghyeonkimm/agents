@@ -11,35 +11,6 @@
   },
   "plugins": [
     {
-      "name": "test",
-      "source": "./plugins/test",
-      "description": "A test plugin demonstrating agents, commands, and skills",
-      "version": "1.0.0",
-      "author": {
-        "name": "Seonghyeon Kim",
-        "url": "https://github.com/seonghyeonkimm"
-      },
-      "homepage": "https://github.com/seonghyeonkimm/agents",
-      "repository": "https://github.com/seonghyeonkimm/agents",
-      "license": "MIT",
-      "keywords": [
-        "template",
-        "example",
-        "starter"
-      ],
-      "category": "development",
-      "strict": false,
-      "commands": [
-        "./commands/hello.md"
-      ],
-      "agents": [
-        "./agents/retro-helper.md"
-      ],
-      "skills": [
-        "./skills/retrospective-guide"
-      ]
-    },
-    {
       "name": "ai-workflow",
       "source": "./plugins/ai-workflow",
       "description": "AI workflow automation plugin",
@@ -58,9 +29,17 @@
       ],
       "category": "development",
       "strict": false,
-      "commands": [],
+      "commands": [
+        "./commands/initialize.md",
+        "./commands/setup.md",
+        "./commands/recommend-agent.md"
+      ],
       "agents": [],
-      "skills": []
+      "skills": [
+        "./skills/create-init-sh",
+        "./skills/create-feature-list",
+        "./skills/create-progress-log"
+      ]
     }
   ]
 }
