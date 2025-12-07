@@ -1,0 +1,60 @@
+# {{FEATURE_NAME}} Spec
+
+## 개요
+
+{{FEATURE_OVERVIEW}}
+
+## 목적
+
+{{FEATURE_PURPOSE}}
+
+## 요구사항
+
+### 기능 요구사항
+- [ ] {{FUNCTIONAL_REQ_1}}
+- [ ] {{FUNCTIONAL_REQ_2}}
+- [ ] {{FUNCTIONAL_REQ_3}}
+
+### 비기능 요구사항
+- [ ] {{NON_FUNCTIONAL_REQ_1}}
+
+## 사용자 시나리오
+
+### 시나리오 1: {{SCENARIO_NAME}}
+1. {{SCENARIO_STEP_1}}
+2. {{SCENARIO_STEP_2}}
+3. {{SCENARIO_STEP_3}}
+
+**예상 결과:** {{EXPECTED_RESULT}}
+
+## 기술 설계
+
+### 관련 파일
+- `{{RELATED_FILE_1}}` - {{FILE_DESCRIPTION_1}}
+- `{{RELATED_FILE_2}}` - {{FILE_DESCRIPTION_2}}
+
+### 데이터 구조
+{{DATA_STRUCTURE}}
+
+### API 설계
+{{API_DESIGN}}
+
+## 엣지 케이스
+
+- {{EDGE_CASE_1}}: {{EDGE_HANDLING_1}}
+- {{EDGE_CASE_2}}: {{EDGE_HANDLING_2}}
+
+## 테스트 계획
+
+- [ ] {{TEST_CASE_1}}
+- [ ] {{TEST_CASE_2}}
+
+## 참고 자료
+
+- {{REFERENCE_1}}
+- {{REFERENCE_2}}
+
+---
+
+*생성일: {{CURRENT_DATE}}*
+*상태: Draft*

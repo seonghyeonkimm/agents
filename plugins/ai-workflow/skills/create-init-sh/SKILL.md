@@ -7,6 +7,10 @@ description: 프로젝트 상태 검증 및 개발 서버 실행을 위한 init.
 
 프로젝트의 package.json을 분석하여 lint, typecheck, 개발 서버 실행 스크립트를 생성합니다.
 
+## 템플릿 파일
+
+- `templates/init.sh.template` - init.sh 스크립트 템플릿
+
 ## 1. 프로젝트 분석
 
 ```bash
@@ -50,55 +54,16 @@ ls -la package-lock.json yarn.lock pnpm-lock.yaml bun.lockb 2>/dev/null
 3. `serve`
 4. `start`
 
-## 3. 템플릿
+## 3. 템플릿 사용
 
-```bash
-#!/bin/bash
+`templates/init.sh.template` 파일을 읽어서 플레이스홀더를 치환합니다.
 
-# AI Workflow 초기화 스크립트
-# 프로젝트가 작업 가능한 상태인지 검증하고 개발 서버를 실행합니다.
-
-set -e
-
-# 색상 정의
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
-
-echo "🔍 프로젝트 상태 검증 중..."
-
-# Lint 검사
-echo -e "${YELLOW}📝 Lint 검사...${NC}"
-{LINT_COMMAND}
-echo -e "${GREEN}✓ Lint 통과${NC}"
-
-# Type 검사
-echo -e "${YELLOW}🔷 Type 검사...${NC}"
-{TYPECHECK_COMMAND}
-echo -e "${GREEN}✓ Type 검사 통과${NC}"
-
-echo -e "${GREEN}✅ 프로젝트가 clean 상태입니다.${NC}"
-
-# 개발 서버 실행 (백그라운드)
-echo ""
-echo -e "${YELLOW}🚀 개발 서버 시작 중...${NC}"
-{DEV_SERVER_COMMAND} &
-DEV_SERVER_PID=$!
-echo -e "${GREEN}✓ 개발 서버 실행됨 (PID: $DEV_SERVER_PID)${NC}"
-
-# PID 저장 (나중에 종료할 때 사용)
-echo $DEV_SERVER_PID > .dev-server.pid
-
-echo ""
-echo -e "${GREEN}🎉 초기화 완료! 작업을 시작할 수 있습니다.${NC}"
-echo -e "개발 서버 종료: ${YELLOW}kill \$(cat .dev-server.pid)${NC}"
-```
-
-**플레이스홀더 치환:**
-- `{LINT_COMMAND}`: 예) `pnpm lint`
-- `{TYPECHECK_COMMAND}`: 예) `pnpm typecheck`
-- `{DEV_SERVER_COMMAND}`: 예) `pnpm dev`
+**플레이스홀더:**
+| 플레이스홀더 | 설명 | 예시 |
+|-------------|------|------|
+| `{{LINT_COMMAND}}` | lint 실행 명령어 | `pnpm lint` |
+| `{{TYPECHECK_COMMAND}}` | typecheck 실행 명령어 | `pnpm typecheck` |
+| `{{DEV_SERVER_COMMAND}}` | dev 서버 실행 명령어 | `pnpm dev` |
 
 ## 4. 불확실한 경우
 

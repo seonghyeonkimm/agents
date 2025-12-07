@@ -1,0 +1,10 @@
+{
+  "id": "{{FEATURE_ID}}",
+  "title": "{{FEATURE_TITLE}}",
+  "description": "{{FEATURE_DESCRIPTION}}",
+  "status": "{{STATUS}}",
+  "priority": "{{PRIORITY}}",
+  "specPath": "{{SPEC_PATH}}",
+  "relatedFiles": [],
+  "notes": "{{NOTES}}"
+}

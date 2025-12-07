@@ -32,13 +32,15 @@
       "commands": [
         "./commands/initialize.md",
         "./commands/setup.md",
+        "./commands/add-feature.md",
         "./commands/recommend-agent.md"
       ],
       "agents": [],
       "skills": [
         "./skills/create-init-sh",
         "./skills/create-feature-list",
-        "./skills/create-progress-log"
+        "./skills/create-progress-log",
+        "./skills/create-spec-doc"
       ]
     }
   ]
