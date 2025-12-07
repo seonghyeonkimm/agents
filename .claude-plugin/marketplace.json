@@ -11,8 +11,8 @@
   },
   "plugins": [
     {
-      "name": "test-plugin",
-      "source": "./plugins/test-plugin",
+      "name": "test",
+      "source": "./plugins/test",
       "description": "A test plugin demonstrating agents, commands, and skills",
       "version": "1.0.0",
       "author": {
@@ -38,6 +38,29 @@
       "skills": [
         "./skills/retrospective-guide"
       ]
+    },
+    {
+      "name": "ai-workflow",
+      "source": "./plugins/ai-workflow",
+      "description": "AI workflow automation plugin",
+      "version": "1.0.0",
+      "author": {
+        "name": "Seonghyeon Kim",
+        "url": "https://github.com/seonghyeonkimm"
+      },
+      "homepage": "https://github.com/seonghyeonkimm/agents",
+      "repository": "https://github.com/seonghyeonkimm/agents",
+      "license": "MIT",
+      "keywords": [
+        "ai",
+        "workflow",
+        "automation"
+      ],
+      "category": "development",
+      "strict": false,
+      "commands": [],
+      "agents": [],
+      "skills": []
     }
   ]
 }
