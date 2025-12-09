@@ -1,0 +1,25 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [2.1.0] - 2025-12-09
+
+### Changed
+- `add-issue` 명령어를 문서 기반 이슈 생성으로 개선
+  - 로컬 spec/plan 문서 경로를 입력받아 Linear 이슈 생성
+  - 3가지 필수 검증 기준 추가 (작업 상세도, 기술 구현 내용, 평가 기준)
+  - 검증 통과 전에는 이슈 생성 불가
+
+### Removed
+- `create-spec-doc` 스킬 삭제
+
+## [2.0.0] - 2025-12-08
+
+### Changed
+- Linear 기반 workflow로 전환
+- 기존 feature-list.json 기반에서 Linear API 기반으로 변경
