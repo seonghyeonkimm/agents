@@ -14,7 +14,7 @@
       "name": "ai-workflow",
       "source": "./plugins/ai-workflow",
       "description": "Linear 기반 AI workflow automation plugin",
-      "version": "2.1.3",
+      "version": "2.1.4",
       "author": {
         "name": "Seonghyeon Kim",
         "url": "https://github.com/seonghyeonkimm"
@@ -27,18 +27,7 @@
         "workflow",
         "automation",
         "linear"
-      ],
-      "category": "development",
-      "strict": false,
-      "commands": [
-        "./commands/setup.md",
-        "./commands/add-issue.md"
-      ],
-      "agents": [],
-      "skills": [
-        "./skills/create-init-sh"
-      ],
-      "hooks": "./hooks/hooks.json"
+      ]
     }
   ]
 }

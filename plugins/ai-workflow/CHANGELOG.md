@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.4] - 2025-12-09
+
+### Fixed
+- hooks 등록 오류 수정
+  - marketplace.json에서 `hooks` 필드 제거 (Claude Code가 `hooks/hooks.json`을 자동 발견)
+  - hooks.json에서 `matcher` 필드 제거 (모든 SessionStart 이벤트에서 실행)
+
 ## [2.1.3] - 2025-12-09
 
 ### Fixed
