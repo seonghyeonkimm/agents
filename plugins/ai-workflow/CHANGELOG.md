@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.1] - 2025-12-09
+
+### Fixed
+- hooks 스키마 오류 수정 (marketplace.json에서 hooks.json 파일로 분리)
+
 ## [2.1.0] - 2025-12-09
 
 ### Changed
