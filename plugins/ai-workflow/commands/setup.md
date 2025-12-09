@@ -106,21 +106,25 @@ grep -q "^\.ai-workflow" .gitignore 2>/dev/null || echo -e "\n# AI Workflow conf
 
 ---
 
-## 6. init.sh 생성
+## 6. init.sh 및 clear.sh 생성
 
-`ai-workflow:create-init-sh` 스킬을 사용하여 초기화 스크립트를 생성합니다.
+`ai-workflow:create-setup-sh` 스킬을 사용하여 초기화 및 정리 스크립트를 생성합니다.
 
-이 스크립트는 SessionStart 시 자동으로 실행되어:
+**init.sh** - `/ai-workflow:init` 명령어로 실행:
 1. Lint/Typecheck로 프로젝트 상태 체크
-2. 개발 서버 실행
+2. 개발 서버 실행 (백그라운드)
 3. 서버 상태 확인 후 결과 보고
+
+**clear.sh** - `/ai-workflow:clear` 명령어로 실행:
+1. init.sh에서 실행한 프로세스 종료
+2. 임시 파일 정리
 
 **스킬 실행:**
 ```
-Skill tool: skill="ai-workflow:create-init-sh"
+Skill tool: skill="ai-workflow:create-setup-sh"
 ```
 
-스킬의 지시에 따라 프로젝트에 맞는 init.sh를 생성하세요.
+스킬의 지시에 따라 프로젝트에 맞는 init.sh와 clear.sh를 생성하세요.
 
 ---
 
@@ -143,10 +147,11 @@ Skill tool: skill="ai-workflow:create-init-sh"
 **설정 파일:**
 - `.ai-workflow/config.json`
 - `.ai-workflow/init.sh`
+- `.ai-workflow/clear.sh`
 
 **다음 단계:**
-- 새 세션 시작 시 init.sh가 자동으로 실행됩니다
-- `/ai-workflow:initialize` 명령어로 Linear 작업 상태를 확인하세요
+- `/ai-workflow:init` 명령어로 프로젝트 초기화 및 Linear 작업 상태 확인
+- `/ai-workflow:clear` 명령어로 실행 중인 프로세스 정리
 
 ---
 

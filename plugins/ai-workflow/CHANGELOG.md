@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2025-12-09
+
+### Added
+- `/ai-workflow:clear` 명령어 추가
+  - init.sh에서 실행한 프로세스 종료
+  - 임시 파일 정리
+
+### Changed
+- `create-init-sh` 스킬을 `create-setup-sh`로 이름 변경
+  - init.sh와 clear.sh 둘 다 생성하도록 확장
+
 ## [2.2.1] - 2025-12-09
 
 ### Changed

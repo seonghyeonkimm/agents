@@ -1,19 +1,24 @@
 ---
-name: create-init-sh
-description: 프로젝트 초기화 스크립트(init.sh)를 생성합니다. lint/typecheck 상태 확인 및 개발 서버 실행을 자동화합니다.
+name: create-setup-sh
+description: 프로젝트 초기화 스크립트(init.sh)와 정리 스크립트(clear.sh)를 생성합니다. lint/typecheck 상태 확인 및 개발 서버 실행을 자동화합니다.
 ---
 
-# Init.sh 생성 스킬
+# Setup Scripts 생성 스킬
 
-프로젝트의 초기화 스크립트를 생성합니다. 이 스크립트는 `/ai-workflow:init` 명령어로 실행됩니다.
+프로젝트의 초기화 및 정리 스크립트를 생성합니다.
 
-## init.sh의 역할
+## init.sh의 역할 (`/ai-workflow:init`)
 
 1. **프로젝트 상태 체크**: lint, typecheck 실행하여 코드 품질 확인
 2. **개발 서버 실행**: 개발 서버를 백그라운드에서 시작
 3. **서버 상태 확인**: 서버가 정상적으로 실행되었는지 검증
 4. **Linear 연결 확인**: config.json에서 Linear 설정 읽기
 5. **결과 보고**: 초기화 결과 출력
+
+## clear.sh의 역할 (`/ai-workflow:clear`)
+
+1. **프로세스 종료**: init.sh에서 실행한 개발 서버 등 프로세스 종료
+2. **임시 파일 정리**: PID 파일, 로그 파일 등 정리
 
 ## 1. 프로젝트 분석
 
@@ -206,7 +211,92 @@ chmod +x .ai-workflow/init.sh
 
 ---
 
-## 3. 스크립트 커스터마이징
+## 3. clear.sh 생성
+
+init.sh에서 실행한 프로세스를 정리하는 스크립트를 생성합니다:
+
+```bash
+cat > .ai-workflow/clear.sh << 'CLEAR_SCRIPT'
+#!/bin/bash
+
+# AI Workflow Clear Script
+# /ai-workflow:clear 명령어로 실행됩니다.
+
+# 색상 정의
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+echo "======================================"
+echo "🧹 AI Workflow 정리"
+echo "======================================"
+echo ""
+
+# 1. 개발 서버 종료
+stop_dev_server() {
+    echo "🛑 개발 서버 종료 중..."
+
+    if [ -f "/tmp/dev-server.pid" ]; then
+        DEV_PID=$(cat /tmp/dev-server.pid)
+        if ps -p $DEV_PID > /dev/null 2>&1; then
+            kill $DEV_PID 2>/dev/null
+            sleep 1
+            # 강제 종료가 필요한 경우
+            if ps -p $DEV_PID > /dev/null 2>&1; then
+                kill -9 $DEV_PID 2>/dev/null
+            fi
+            echo -e "${GREEN}✓ 개발 서버 종료됨 (PID: $DEV_PID)${NC}"
+        else
+            echo -e "${YELLOW}⚠ 개발 서버가 이미 종료됨 (PID: $DEV_PID)${NC}"
+        fi
+        rm -f /tmp/dev-server.pid
+    else
+        echo -e "${YELLOW}⚠ PID 파일 없음 - 개발 서버가 실행되지 않았거나 이미 종료됨${NC}"
+    fi
+}
+
+# 2. 임시 파일 정리
+cleanup_temp_files() {
+    echo ""
+    echo "🗑️  임시 파일 정리 중..."
+
+    CLEANED=0
+
+    for file in /tmp/dev-server.log /tmp/lint-output.txt /tmp/typecheck-output.txt; do
+        if [ -f "$file" ]; then
+            rm -f "$file"
+            echo "  - $file 삭제됨"
+            CLEANED=$((CLEANED + 1))
+        fi
+    done
+
+    if [ $CLEANED -eq 0 ]; then
+        echo "  정리할 임시 파일 없음"
+    else
+        echo -e "${GREEN}✓ $CLEANED개 파일 정리됨${NC}"
+    fi
+}
+
+# 메인 실행
+main() {
+    stop_dev_server
+    cleanup_temp_files
+
+    echo ""
+    echo "======================================"
+    echo -e "${GREEN}✓ 정리 완료${NC}"
+    echo "======================================"
+}
+
+main
+CLEAR_SCRIPT
+chmod +x .ai-workflow/clear.sh
+```
+
+---
+
+## 4. 스크립트 커스터마이징
 
 사용자에게 확인할 사항:
 
@@ -221,33 +311,40 @@ chmod +x .ai-workflow/init.sh
 - Dev 서버 명령어: `{dev_cmd}`
 - Dev 서버 포트: `{port}`
 
-이 설정으로 init.sh를 생성할까요? 수정이 필요하면 알려주세요.
+이 설정으로 init.sh와 clear.sh를 생성할까요? 수정이 필요하면 알려주세요.
 
 ---
 
-## 4. 검증
+## 5. 검증
 
 생성된 스크립트 확인:
 
 ```bash
 cat .ai-workflow/init.sh
+cat .ai-workflow/clear.sh
 ```
 
 실행 테스트:
 
 ```bash
+# 초기화
 bash .ai-workflow/init.sh
+
+# 정리
+bash .ai-workflow/clear.sh
 ```
 
 ---
 
-## 5. 완료 보고
+## 6. 완료 보고
 
 ---
 
-**init.sh 생성 완료**
+**스크립트 생성 완료**
 
-**생성된 파일:** `.ai-workflow/init.sh`
+**생성된 파일:**
+- `.ai-workflow/init.sh`
+- `.ai-workflow/clear.sh`
 
 **설정된 체크:**
 | 항목 | 명령어 |
@@ -257,8 +354,8 @@ bash .ai-workflow/init.sh
 | Dev Server | `{pm} {dev_cmd}` |
 
 **실행 방법:**
-- `/ai-workflow:init` 명령어 실행
-- 또는 수동 실행: `bash .ai-workflow/init.sh`
+- `/ai-workflow:init` - 프로젝트 초기화 및 개발 서버 시작
+- `/ai-workflow:clear` - 프로세스 종료 및 정리
 
 ---
 
@@ -267,4 +364,5 @@ bash .ai-workflow/init.sh
 - package.json의 scripts를 분석하여 명령어 감지
 - 감지되지 않는 명령어는 사용자에게 확인
 - 개발 서버 포트는 프로젝트 설정에 따라 다를 수 있음
-- init.sh는 .ai-workflow 폴더에 저장되어 git에서 제외됨
+- init.sh, clear.sh는 .ai-workflow 폴더에 저장되어 git에서 제외됨
+- clear.sh는 /tmp/dev-server.pid 파일을 참조하여 프로세스 종료
