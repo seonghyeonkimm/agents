@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.2] - 2025-12-09
+
+### Changed
+- hooks.json 설정 개선
+  - `matcher: "startup"` 추가 (신규 세션 시작 시에만 실행)
+  - `$CLAUDE_PROJECT_DIR` 환경변수 사용으로 경로 안정성 향상
+  - `timeout: 30` 추가로 무한 대기 방지
+
 ## [2.1.1] - 2025-12-09
 
 ### Fixed
