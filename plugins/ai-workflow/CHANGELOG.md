@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.3] - 2025-12-09
+
+### Fixed
+- hooks가 모든 SessionStart 이벤트에서 실행되도록 수정
+  - matcher를 `"startup"`에서 `"startup|resume|clear|compact"`로 변경
+  - resume, clear, compact 시에도 init.sh가 실행됨
+
 ## [2.1.2] - 2025-12-09
 
 ### Changed
