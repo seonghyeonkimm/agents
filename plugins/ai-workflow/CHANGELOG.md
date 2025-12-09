@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.1] - 2025-12-09
+
+### Changed
+- `create-init-sh` 스킬에서 hook 관련 내용 제거
+  - `/ai-workflow:init` 명령어로 실행되도록 문서 업데이트
+
 ## [2.2.0] - 2025-12-09
 
 ### Changed

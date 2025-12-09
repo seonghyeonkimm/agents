@@ -5,7 +5,7 @@ description: 프로젝트 초기화 스크립트(init.sh)를 생성합니다. li
 
 # Init.sh 생성 스킬
 
-프로젝트의 초기화 스크립트를 생성합니다. 이 스크립트는 SessionStart 시 자동으로 실행됩니다.
+프로젝트의 초기화 스크립트를 생성합니다. 이 스크립트는 `/ai-workflow:init` 명령어로 실행됩니다.
 
 ## init.sh의 역할
 
@@ -13,7 +13,7 @@ description: 프로젝트 초기화 스크립트(init.sh)를 생성합니다. li
 2. **개발 서버 실행**: 개발 서버를 백그라운드에서 시작
 3. **서버 상태 확인**: 서버가 정상적으로 실행되었는지 검증
 4. **Linear 연결 확인**: config.json에서 Linear 설정 읽기
-5. **결과 보고**: JSON 형식으로 초기화 결과 출력 + Linear 조회 지시
+5. **결과 보고**: 초기화 결과 출력
 
 ## 1. 프로젝트 분석
 
@@ -45,7 +45,7 @@ cat > .ai-workflow/init.sh << 'INIT_SCRIPT'
 #!/bin/bash
 
 # AI Workflow Init Script
-# 이 스크립트는 SessionStart 시 자동으로 실행됩니다.
+# /ai-workflow:init 명령어로 실행됩니다.
 
 set -e
 
@@ -169,7 +169,6 @@ main() {
     echo "📊 초기화 결과"
     echo "======================================"
 
-    # JSON 출력 (SessionStart hook용)
     if [ ${#ERRORS[@]} -eq 0 ]; then
         OVERALL_STATUS="success"
     else
@@ -185,15 +184,13 @@ main() {
         LINEAR_CONFIG="Linear 미설정 (/ai-workflow:setup 필요)"
     fi
 
-    # 결과를 JSON으로 출력
-    cat << EOF
-{
-  "hookSpecificOutput": {
-    "hookEventName": "SessionStart",
-    "additionalContext": "🤖 **AI Workflow 초기화 완료**\n\n**프로젝트 상태:**\n- Lint: ${LINT_STATUS}\n- Typecheck: ${TYPECHECK_STATUS}\n- Dev Server: ${DEV_SERVER_STATUS}\n- ${LINEAR_CONFIG}\n\n**개발 서버:** http://localhost:{DEV_PORT}\n\n---\n\n**[ACTION REQUIRED]** Linear 작업 상태를 확인하려면 다음을 수행하세요:\n\n1. .ai-workflow/config.json 읽어서 teamKey, projectId 확인\n2. mcp__linear__list_issues 호출 (team: teamKey, label: 'ai-workflow', limit: 10)\n3. 이슈를 상태별로 분류하여 보고 (In Progress / Todo / Done)\n4. 다음 추천 작업 제안"
-  }
-}
-EOF
+    # 결과 출력
+    echo ""
+    echo "- Lint: ${LINT_STATUS}"
+    echo "- Typecheck: ${TYPECHECK_STATUS}"
+    echo "- Dev Server: ${DEV_SERVER_STATUS} (http://localhost:{DEV_PORT})"
+    echo "- ${LINEAR_CONFIG}"
+    echo ""
 }
 
 main
@@ -259,9 +256,9 @@ bash .ai-workflow/init.sh
 | Typecheck | `{pm} {typecheck_cmd}` |
 | Dev Server | `{pm} {dev_cmd}` |
 
-**자동 실행:**
-- SessionStart 시 자동으로 실행됩니다
-- 수동 실행: `bash .ai-workflow/init.sh`
+**실행 방법:**
+- `/ai-workflow:init` 명령어 실행
+- 또는 수동 실행: `bash .ai-workflow/init.sh`
 
 ---
 

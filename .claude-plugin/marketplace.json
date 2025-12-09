@@ -14,7 +14,7 @@
       "name": "ai-workflow",
       "source": "./plugins/ai-workflow",
       "description": "Linear 기반 AI workflow automation plugin",
-      "version": "2.2.0",
+      "version": "2.2.1",
       "author": {
         "name": "Seonghyeon Kim",
         "url": "https://github.com/seonghyeonkimm"
