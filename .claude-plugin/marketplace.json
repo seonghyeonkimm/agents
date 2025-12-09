@@ -13,8 +13,8 @@
     {
       "name": "ai-workflow",
       "source": "./plugins/ai-workflow",
-      "description": "AI workflow automation plugin",
-      "version": "1.0.0",
+      "description": "Linear 기반 AI workflow automation plugin",
+      "version": "2.0.0",
       "author": {
         "name": "Seonghyeon Kim",
         "url": "https://github.com/seonghyeonkimm"
@@ -25,35 +25,26 @@
       "keywords": [
         "ai",
         "workflow",
-        "automation"
+        "automation",
+        "linear"
       ],
       "category": "development",
       "strict": false,
       "commands": [
-        "./commands/initialize.md",
         "./commands/setup.md",
-        "./commands/add-feature.md",
-        "./commands/recommend-agent.md"
+        "./commands/initialize.md",
+        "./commands/add-issue.md"
       ],
-      "agents": [
-        "./agents/workflow-starter.md"
-      ],
+      "agents": [],
       "skills": [
-        "./skills/create-init-sh",
-        "./skills/create-feature-list",
-        "./skills/create-progress-log",
-        "./skills/create-spec-doc"
+        "./skills/create-spec-doc",
+        "./skills/create-init-sh"
       ],
       "hooks": {
         "SessionStart": [
           {
-            "matcher": "startup",
-            "hooks": [
-              {
-                "type": "command",
-                "command": "${CLAUDE_PLUGIN_ROOT}/scripts/session-start.sh"
-              }
-            ]
+            "type": "command",
+            "command": "bash .ai-workflow/init.sh 2>/dev/null || echo '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"⚠️ init.sh가 없습니다. /ai-workflow:setup을 먼저 실행해주세요.\"}}'"
           }
         ]
       }

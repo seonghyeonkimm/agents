@@ -1,99 +1,263 @@
 ---
 name: create-init-sh
-description: 프로젝트 상태 검증 및 개발 서버 실행을 위한 init.sh 스크립트를 생성합니다. lint, typecheck, dev server 명령어를 자동으로 감지합니다.
+description: 프로젝트 초기화 스크립트(init.sh)를 생성합니다. lint/typecheck 상태 확인 및 개발 서버 실행을 자동화합니다.
 ---
 
-# init.sh 생성 스킬
+# Init.sh 생성 스킬
 
-프로젝트의 package.json을 분석하여 lint, typecheck, 개발 서버 실행 스크립트를 생성합니다.
+프로젝트의 초기화 스크립트를 생성합니다. 이 스크립트는 SessionStart 시 자동으로 실행됩니다.
 
-## 템플릿 파일
+## init.sh의 역할
 
-- `templates/init.sh.template` - init.sh 스크립트 템플릿
+1. **프로젝트 상태 체크**: lint, typecheck 실행하여 코드 품질 확인
+2. **개발 서버 실행**: 개발 서버를 백그라운드에서 시작
+3. **서버 상태 확인**: 서버가 정상적으로 실행되었는지 검증
+4. **결과 보고**: JSON 형식으로 초기화 결과 출력
 
 ## 1. 프로젝트 분석
 
-```bash
-# package.json 확인
-cat package.json 2>/dev/null | head -80
-
-# 패키지 매니저 확인
-ls -la package-lock.json yarn.lock pnpm-lock.yaml bun.lockb 2>/dev/null
-```
-
-**수집할 정보:**
-- 패키지 매니저: `npm` | `yarn` | `pnpm` | `bun`
-- lint 스크립트 이름 및 존재 여부
-- typecheck/tsc 스크립트 이름 및 존재 여부
-- dev 서버 스크립트 이름 및 존재 여부
-
-**패키지 매니저 감지 우선순위:**
-1. `bun.lockb` → bun
-2. `pnpm-lock.yaml` → pnpm
-3. `yarn.lock` → yarn
-4. `package-lock.json` → npm
-5. 없으면 → npm (기본값)
-
-## 2. 스크립트 매핑
-
-**Lint 스크립트 (우선순위):**
-1. `lint`
-2. `eslint`
-3. `lint:check`
-
-**Typecheck 스크립트 (우선순위):**
-1. `typecheck`
-2. `type-check`
-3. `tsc`
-4. `types`
-5. 없으면 → `tsc --noEmit` 직접 사용
-
-**Dev 서버 스크립트 (우선순위):**
-1. `dev`
-2. `start:dev`
-3. `serve`
-4. `start`
-
-## 3. 템플릿 사용
-
-`templates/init.sh.template` 파일을 읽어서 플레이스홀더를 치환합니다.
-
-**플레이스홀더:**
-| 플레이스홀더 | 설명 | 예시 |
-|-------------|------|------|
-| `{{LINT_COMMAND}}` | lint 실행 명령어 | `pnpm lint` |
-| `{{TYPECHECK_COMMAND}}` | typecheck 실행 명령어 | `pnpm typecheck` |
-| `{{DEV_SERVER_COMMAND}}` | dev 서버 실행 명령어 | `pnpm dev` |
-
-## 4. 불확실한 경우
-
-스크립트를 찾을 수 없으면 사용자에게 질문:
-
-> 프로젝트에서 사용하는 명령어를 알려주세요:
-> - Lint 명령어: (예: `pnpm lint`)
-> - Typecheck 명령어: (예: `pnpm typecheck`)
-> - 개발 서버 명령어: (예: `pnpm dev`)
-
-## 5. 파일 생성
+먼저 `package.json`을 분석하여 사용 가능한 스크립트를 확인합니다:
 
 ```bash
-# init.sh 생성 후 실행 권한 부여
-chmod +x init.sh
+cat package.json 2>/dev/null | head -100
 ```
 
-## 6. 기존 파일 처리
+**확인할 스크립트:**
+- Lint: `lint`, `eslint`, `biome check`
+- Typecheck: `typecheck`, `type-check`, `tsc`, `types`
+- Dev server: `dev`, `start`, `serve`
 
-`init.sh`가 이미 존재하면:
-- 덮어쓰지 않고 사용자에게 확인 요청
-- 기존 파일과 새 템플릿의 차이점 설명
-
-## 출력
-
-생성 완료 시:
-
+**패키지 매니저 확인:**
+```bash
+# yarn.lock 또는 pnpm-lock.yaml 또는 package-lock.json 확인
+ls yarn.lock pnpm-lock.yaml package-lock.json bun.lockb 2>/dev/null | head -1
 ```
-✅ init.sh 생성 완료
-- Lint: {lint_command}
-- Typecheck: {typecheck_command}
-- Dev Server: {dev_command}
+
+---
+
+## 2. init.sh 생성
+
+분석 결과를 바탕으로 `.ai-workflow/init.sh`를 생성합니다:
+
+```bash
+cat > .ai-workflow/init.sh << 'INIT_SCRIPT'
+#!/bin/bash
+
+# AI Workflow Init Script
+# 이 스크립트는 SessionStart 시 자동으로 실행됩니다.
+
+set -e
+
+# 색상 정의
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# 결과 저장 변수
+LINT_STATUS="skipped"
+TYPECHECK_STATUS="skipped"
+DEV_SERVER_STATUS="not_started"
+ERRORS=()
+
+# 패키지 매니저 감지
+detect_package_manager() {
+    if [ -f "bun.lockb" ]; then
+        echo "bun"
+    elif [ -f "pnpm-lock.yaml" ]; then
+        echo "pnpm"
+    elif [ -f "yarn.lock" ]; then
+        echo "yarn"
+    else
+        echo "npm"
+    fi
+}
+
+PM=$(detect_package_manager)
+
+# 1. Lint 체크
+run_lint() {
+    echo "🔍 Lint 체크 중..."
+    if {PM_RUN} lint > /tmp/lint-output.txt 2>&1; then
+        LINT_STATUS="pass"
+        echo -e "${GREEN}✓ Lint 통과${NC}"
+    else
+        LINT_STATUS="fail"
+        ERRORS+=("Lint 오류 발견")
+        echo -e "${RED}✗ Lint 실패${NC}"
+        cat /tmp/lint-output.txt | tail -20
+    fi
+}
+
+# 2. Typecheck
+run_typecheck() {
+    echo "📝 타입 체크 중..."
+    if {PM_RUN} {TYPECHECK_CMD} > /tmp/typecheck-output.txt 2>&1; then
+        TYPECHECK_STATUS="pass"
+        echo -e "${GREEN}✓ 타입 체크 통과${NC}"
+    else
+        TYPECHECK_STATUS="fail"
+        ERRORS+=("타입 오류 발견")
+        echo -e "${RED}✗ 타입 체크 실패${NC}"
+        cat /tmp/typecheck-output.txt | tail -20
+    fi
+}
+
+# 3. 개발 서버 시작
+start_dev_server() {
+    echo "🚀 개발 서버 시작 중..."
+
+    # 이미 실행 중인 서버 확인
+    if lsof -i:{DEV_PORT} > /dev/null 2>&1; then
+        echo -e "${YELLOW}⚠ 포트 {DEV_PORT}에서 이미 서버가 실행 중입니다${NC}"
+        DEV_SERVER_STATUS="already_running"
+        return
+    fi
+
+    # 서버 시작 (백그라운드)
+    nohup {PM_RUN} {DEV_CMD} > /tmp/dev-server.log 2>&1 &
+    DEV_PID=$!
+    echo $DEV_PID > /tmp/dev-server.pid
+
+    # 서버 시작 대기 (최대 30초)
+    echo "서버 시작 대기 중..."
+    for i in {1..30}; do
+        if curl -s http://localhost:{DEV_PORT} > /dev/null 2>&1; then
+            DEV_SERVER_STATUS="running"
+            echo -e "${GREEN}✓ 개발 서버 시작됨 (http://localhost:{DEV_PORT})${NC}"
+            return
+        fi
+        sleep 1
+    done
+
+    DEV_SERVER_STATUS="failed"
+    ERRORS+=("개발 서버 시작 실패")
+    echo -e "${RED}✗ 개발 서버 시작 실패${NC}"
+    cat /tmp/dev-server.log | tail -20
+}
+
+# 메인 실행
+main() {
+    echo "======================================"
+    echo "🤖 AI Workflow 초기화"
+    echo "======================================"
+    echo ""
+
+    # Lint 체크 (lint 스크립트가 있는 경우)
+    if grep -q '"lint"' package.json 2>/dev/null; then
+        run_lint
+    else
+        echo "ℹ️  Lint 스크립트 없음, 건너뜀"
+    fi
+    echo ""
+
+    # Typecheck (typecheck 스크립트가 있는 경우)
+    if grep -qE '"(typecheck|type-check|tsc)"' package.json 2>/dev/null; then
+        run_typecheck
+    else
+        echo "ℹ️  Typecheck 스크립트 없음, 건너뜀"
+    fi
+    echo ""
+
+    # 개발 서버 시작
+    start_dev_server
+    echo ""
+
+    # 결과 요약
+    echo "======================================"
+    echo "📊 초기화 결과"
+    echo "======================================"
+
+    # JSON 출력 (SessionStart hook용)
+    if [ ${#ERRORS[@]} -eq 0 ]; then
+        OVERALL_STATUS="success"
+    else
+        OVERALL_STATUS="warning"
+    fi
+
+    # 결과를 JSON으로 출력
+    cat << EOF
+{
+  "hookSpecificOutput": {
+    "hookEventName": "SessionStart",
+    "additionalContext": "🤖 **AI Workflow 초기화 완료**\n\n**상태:**\n- Lint: ${LINT_STATUS}\n- Typecheck: ${TYPECHECK_STATUS}\n- Dev Server: ${DEV_SERVER_STATUS}\n\n**개발 서버:** http://localhost:{DEV_PORT}\n\n다음 단계: \`ai-workflow:workflow-starter\` agent를 사용하여 작업을 시작하세요."
+  }
+}
+EOF
+}
+
+main
+INIT_SCRIPT
+chmod +x .ai-workflow/init.sh
 ```
+
+**위 템플릿에서 치환해야 할 값:**
+- `{PM_RUN}`: 패키지 매니저 실행 명령 (`npm run`, `yarn`, `pnpm`, `bun run`)
+- `{TYPECHECK_CMD}`: typecheck 스크립트 이름 (`typecheck`, `type-check`, `tsc`)
+- `{DEV_CMD}`: 개발 서버 스크립트 이름 (`dev`, `start`)
+- `{DEV_PORT}`: 개발 서버 포트 (기본값: 3000)
+
+---
+
+## 3. 스크립트 커스터마이징
+
+사용자에게 확인할 사항:
+
+---
+
+**init.sh 설정 확인**
+
+프로젝트 분석 결과:
+- 패키지 매니저: `{detected_pm}`
+- Lint 명령어: `{lint_cmd or "없음"}`
+- Typecheck 명령어: `{typecheck_cmd or "없음"}`
+- Dev 서버 명령어: `{dev_cmd}`
+- Dev 서버 포트: `{port}`
+
+이 설정으로 init.sh를 생성할까요? 수정이 필요하면 알려주세요.
+
+---
+
+## 4. 검증
+
+생성된 스크립트 확인:
+
+```bash
+cat .ai-workflow/init.sh
+```
+
+실행 테스트:
+
+```bash
+bash .ai-workflow/init.sh
+```
+
+---
+
+## 5. 완료 보고
+
+---
+
+**init.sh 생성 완료**
+
+**생성된 파일:** `.ai-workflow/init.sh`
+
+**설정된 체크:**
+| 항목 | 명령어 |
+|------|--------|
+| Lint | `{pm} {lint_cmd}` |
+| Typecheck | `{pm} {typecheck_cmd}` |
+| Dev Server | `{pm} {dev_cmd}` |
+
+**자동 실행:**
+- SessionStart 시 자동으로 실행됩니다
+- 수동 실행: `bash .ai-workflow/init.sh`
+
+---
+
+## 주의사항
+
+- package.json의 scripts를 분석하여 명령어 감지
+- 감지되지 않는 명령어는 사용자에게 확인
+- 개발 서버 포트는 프로젝트 설정에 따라 다를 수 있음
+- init.sh는 .ai-workflow 폴더에 저장되어 git에서 제외됨
