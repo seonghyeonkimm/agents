@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .ai-workflow/init.sh 2>/dev/null || echo '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"⚠️ init.sh가 없습니다. /ai-workflow:setup을 먼저 실행해주세요.\"}}'"
+          }
+        ]
+      }
+    ]
+  }
+}
