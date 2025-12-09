@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2025-12-09
+
+### Changed
+- SessionStart hook을 `/ai-workflow:init` 명령어로 전환
+  - 자동 실행 대신 명시적 명령어로 초기화
+  - hooks 폴더 및 hooks.json 제거
+
+### Added
+- `/ai-workflow:init` 명령어 추가
+  - `.ai-workflow/init.sh` 실행
+  - Linear 작업 현황 조회 및 보고
+
 ## [2.1.4] - 2025-12-09
 
 ### Fixed
