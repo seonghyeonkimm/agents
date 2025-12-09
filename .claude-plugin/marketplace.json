@@ -32,7 +32,6 @@
       "strict": false,
       "commands": [
         "./commands/setup.md",
-        "./commands/initialize.md",
         "./commands/add-issue.md"
       ],
       "agents": [],
