@@ -27,6 +27,25 @@
         "hooks",
         "statusline"
       ]
+    },
+    {
+      "name": "tdd-workflow",
+      "source": "./plugins/tdd-workflow",
+      "description": "Linear Project 기반 TDD 워크플로우 자동화 - 테크스펙 작성부터 구현까지",
+      "version": "0.3.0",
+      "author": {
+        "name": "Seonghyeon Kim",
+        "url": "https://github.com/seonghyeonkimm"
+      },
+      "license": "MIT",
+      "keywords": [
+        "tdd",
+        "techspec",
+        "workflow",
+        "linear",
+        "automation",
+        "fe-development"
+      ]
     }
   ]
 }
