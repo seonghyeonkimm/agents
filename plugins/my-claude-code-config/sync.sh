@@ -14,8 +14,14 @@ CLAUDE_HOME="${HOME}/.claude"
 # Files to sync: plugin components
 PLUGIN_FILES=(
   "commands/wrap.md"
+  "commands/tdd/spec.md"
+  "commands/tdd/design.md"
+  "commands/tdd/issues.md"
+  "commands/tdd/implement.md"
   "skills/claude-config-patterns/SKILL.md"
   "skills/code-dojo/SKILL.md"
+  "skills/fe-techspec/SKILL.md"
+  "skills/fe-techspec/references/template.md"
 )
 
 # Files to sync: config (stored under config/ in repo)
@@ -83,9 +89,11 @@ do_import() {
 
   # Create directories
   mkdir -p "$CLAUDE_HOME/commands"
+  mkdir -p "$CLAUDE_HOME/commands/tdd"
   mkdir -p "$CLAUDE_HOME/agents"
   mkdir -p "$CLAUDE_HOME/skills/claude-config-patterns"
   mkdir -p "$CLAUDE_HOME/skills/code-dojo"
+  mkdir -p "$CLAUDE_HOME/skills/fe-techspec/references"
   mkdir -p "$CLAUDE_HOME/hooks"
 
   # Plugin components

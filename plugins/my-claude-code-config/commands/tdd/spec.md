@@ -1,0 +1,180 @@
+---
+name: tdd/spec
+description: Linear 프로젝트에 FE TechSpec 문서를 생성하고 테스트 케이스까지 작성
+allowed-tools:
+  - Read
+  - Write
+  - ToolSearch
+  - AskUserQuestion
+---
+
+# TDD Spec Command
+
+Linear 프로젝트에 FE TechSpec 문서를 생성한다. PRD와 Figma 컨텍스트를 기반으로 Solution, Acceptance Criteria, Test Cases를 자동 작성.
+
+## Prerequisites
+
+- **필수 스킬**: `fe-techspec` - 템플릿 구조와 섹션별 작성 가이드 참조
+- **필수 MCP**: Linear plugin 활성화
+
+## Execution Flow
+
+### Phase 1: 입력 수집
+
+1. 사용자로부터 Linear Project 링크 또는 이름을 받는다
+2. PRD (Notion URL)가 제공되지 않은 경우, AskUserQuestion으로 명시적으로 묻는다:
+   ```
+   question: "PRD (Notion URL)가 있나요? 없으면 비워두세요."
+   ```
+3. Figma URL이 제공되지 않은 경우, AskUserQuestion으로 명시적으로 묻는다:
+   ```
+   question: "Figma 디자인 URL이 있나요? 없으면 비워두세요."
+   ```
+
+**PRD와 Figma가 모두 없는 경우**: 정말로 없는지 한 번 더 확인한다.
+
+### Phase 2: 컨텍스트 수집
+
+ToolSearch로 MCP 도구를 로드한 뒤 컨텍스트를 수집한다.
+
+1. **Linear 프로젝트 조회**:
+   ```
+   ToolSearch(query: "select:mcp__plugin_linear_linear__get_project")
+   → mcp__plugin_linear_linear__get_project(query: "{project identifier}")
+   ```
+
+2. **PRD 내용 조회** (URL 제공 시):
+   ```
+   ToolSearch(query: "select:mcp__plugin_Notion_notion__notion-fetch")
+   → mcp__plugin_Notion_notion__notion-fetch(url: "{notion_url}")
+   ```
+   - 핵심 요구사항, 유저 스토리, 성공 지표를 추출
+
+3. **Figma 디자인 컨텍스트** (URL 제공 시):
+   ```
+   ToolSearch(query: "select:mcp__plugin_figma_figma__get_design_context")
+   → mcp__plugin_figma_figma__get_design_context(url: "{figma_url}")
+   ```
+   - 컴포넌트 구조, UI 흐름을 추출
+
+### Phase 3: TechSpec 작성
+
+1. `fe-techspec` 스킬의 섹션별 작성 가이드를 참조한다
+2. `fe-techspec/references/template.md`에서 문서 구조를 로드한다
+
+수집된 컨텍스트를 기반으로 전체 문서를 작성한다.
+
+**작성 순서:**
+
+1. **Summary**: 프로젝트 배경 + PRD/Figma 링크
+2. **Solution**: PRD 요구사항과 Figma 디자인을 분석하여 기술적 해결책 서술
+3. **Acceptance Criteria**: PRD 유저 스토리에서 테스트 가능한 기준 도출
+4. **Non-Functional Requirements**: 해당되는 경우에만 작성 (Performance, A11y, SEO)
+5. **Functional Requirements (Given/When/Then)**:
+   - Entity와 Command를 식별
+   - 정상 → 에러 → 엣지 케이스 순서로 테스트 케이스 테이블 작성
+6. **Design**: 컴포넌트 계층, 상태 관리, API 계약
+7. **Component & Code - Client**: 파일 구조, 컴포넌트 분해
+
+### Phase 4: Linear 문서 생성
+
+```
+ToolSearch(query: "select:mcp__plugin_linear_linear__create_document")
+→ mcp__plugin_linear_linear__create_document(
+    title: "FE TechSpec: {Feature Name}",
+    project: "{project ID or name}",
+    content: "{full markdown content}"
+  )
+```
+
+### Phase 5: 결과 저장
+
+`.claude/docs/{project-name}/spec.md`에 결과를 저장한다. `{project-name}`은 Linear 프로젝트 이름을 kebab-case로 변환한 값.
+
+파일 형식 (YAML frontmatter + 생성된 TechSpec 전문):
+
+```markdown
+---
+project:
+  id: "{project-id}"
+  name: "{project-name}"
+  url: "{linear-project-url}"
+document:
+  id: "{document-id}"
+  url: "{linear-document-url}"
+  title: "FE TechSpec: {Feature Name}"
+sources:
+  prd: "{notion-url-or-null}"
+  figma: "{figma-url-or-null}"
+spec:
+  entities: ["{Entity1}", "{Entity2}"]
+  commands: ["{Command1}", "{Command2}"]
+  test_case_count: {N}
+  acceptance_criteria_count: {N}
+created_at: "{ISO-8601}"
+---
+
+{Phase 3에서 생성한 TechSpec Markdown 전문}
+```
+
+이 파일은 후속 command (`/tdd:design` 등)의 입력으로 사용된다.
+
+### Phase 6: 결과 보고
+
+```
+FE TechSpec 생성 완료!
+
+Document: {Linear Document URL}
+Project: {Project Name}
+Local: .claude/docs/{project-name}/spec.md
+
+작성된 섹션:
+- Summary (PRD/Figma 링크 포함)
+- Solution
+- Acceptance Criteria ({N}개)
+- Non-Functional Requirements
+- Functional Requirements ({N}개 테스트 케이스)
+- Design
+- Component & Code
+
+다음 단계:
+1. Linear에서 문서를 리뷰하세요
+2. /tdd:design 으로 도메인 설계를 진행하세요
+```
+
+### Phase 7: (Human) Review
+
+사용자가 Linear에서 문서를 리뷰한다.
+
+## Error Handling
+
+| 상황 | 대응 |
+|------|------|
+| Linear 프로젝트를 찾을 수 없음 | 프로젝트 목록을 보여주고 선택 요청 |
+| Notion PRD fetch 실패 | PRD 없이 진행, Summary에 명시 |
+| Figma fetch 실패 | Figma 없이 진행, Design 섹션 스킵 |
+| Linear 문서 생성 실패 | 생성된 내용을 로컬 파일로 저장 후 안내 |
+| MCP 도구 로드 실패 | 에러 메시지와 함께 플러그인 활성화 방법 안내 |
+
+## Example
+
+```
+사용자: /tdd:spec
+
+Claude: Linear Project 링크 또는 이름을 알려주세요.
+사용자: https://linear.app/daangn/project/my-feature-123
+
+Claude: [AskUserQuestion] PRD (Notion URL)가 있나요?
+사용자: https://www.notion.so/my-prd-page
+
+Claude: [AskUserQuestion] Figma 디자인 URL이 있나요?
+사용자: https://www.figma.com/file/xxx
+
+Claude: [컨텍스트 수집 중...]
+Claude: [TechSpec 작성 중...]
+Claude: [Linear 문서 생성 중...]
+
+Claude: FE TechSpec 생성 완료!
+  Document: https://linear.app/daangn/document/fe-techspec-xxx
+  ...
+```
