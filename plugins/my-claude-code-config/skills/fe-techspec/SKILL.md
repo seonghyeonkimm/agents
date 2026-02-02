@@ -78,14 +78,9 @@ SLA/SLO 기준의 시스템 요구사항.
 
 **핵심 개념:**
 - 기능 요구사항을 Test cases (Given, When, Then) 형태로 정의해요.
-- 정의한 TestCase 기반으로 module, entities, usecase를 추출해요.
 
 ```markdown
 ## Functional Requirements (Test cases / Given, When, Then)
-
-### Entity: {EntityName}
-
-**Command**: {CommandName}
 
 | # | Given | When | Then |
 |---|-------|------|------|
@@ -94,7 +89,6 @@ SLA/SLO 기준의 시스템 요구사항.
 ```
 
 작성 팁:
-- Entity별로 그룹핑
 - 정상 케이스 → 에러 케이스 → 엣지 케이스 순서
 - Given은 상태, When은 행동, Then은 검증 가능한 결과
 

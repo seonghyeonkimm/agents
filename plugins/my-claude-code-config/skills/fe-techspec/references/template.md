@@ -27,15 +27,6 @@ SLA/SLO를 준수하며 시스템 요구사항을 정의해요.
 
 ## Functional Requirements (Test cases / Given, When, Then)
 
-기능 요구사항을 Test cases (Given, When, Then) 형태로 정의해요.
-
-- Command = Event = (User) + ReadModel
-- 명확히 BusinessLogic (Entity), API interface 정의하기!
-
-### Entity: {EntityName}
-
-**Command**: {CommandName}
-
 | # | Given | When | Then |
 |---|-------|------|------|
 | 1 | | | |
@@ -47,5 +38,7 @@ SLA/SLO를 준수하며 시스템 요구사항을 정의해요.
 ## (Optional) Context & Container Diagram
 
 ## Component & Code - Client
+- Test cases 기반으로 module, entity, usecase 추출
+- 컴포넌트 분해, 파일 구조, Props 인터페이스.
 
 ## (Optional) Component & Code - Server
