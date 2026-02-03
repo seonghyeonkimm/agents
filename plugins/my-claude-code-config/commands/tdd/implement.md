@@ -1,6 +1,6 @@
 ---
 name: tdd/implement
-description: spec/design/issues 기반으로 병렬 워크스페이스를 생성하여 Red-Green-Refactor 방식으로 구현. Base branch를 현재 git branch 또는 사용자 입력으로 지정 가능
+description: spec/design/issues 기반으로 병렬 워크스페이스를 생성하여 Red-Green-Refactor 방식으로 구현. Base branch를 파라미터, implement.yaml, 또는 사용자 입력으로 지정 가능
 allowed-tools:
   - Read
   - Write
@@ -14,6 +14,31 @@ allowed-tools:
 
 `/tdd:spec`, `/tdd:design`, `/tdd:issues`의 결과물을 기반으로 병렬 구현을 시작한다. 각 워크스페이스는 Red-Green-Refactor TDD 사이클을 따른다.
 
+## Usage
+
+```
+/tdd:implement [--base <branch>]
+```
+
+### Parameters
+
+| Parameter | Description | Example |
+|-----------|-------------|---------|
+| `--base <branch>` | PR의 target branch를 직접 지정. implement.yaml 설정을 override함 | `--base feature/new-cart` |
+
+### Examples
+
+```bash
+# 기본 실행 (implement.yaml 또는 대화형 입력 사용)
+/tdd:implement
+
+# base branch 직접 지정 (implement.yaml 무시)
+/tdd:implement --base feature/checkout
+
+# develop branch를 base로 지정
+/tdd:implement --base develop
+```
+
 ## Prerequisites
 
 - **필수**: `.claude/docs/{project-name}/meta.yaml` 존재 (`/tdd:spec` 실행 결과)
@@ -25,8 +50,10 @@ allowed-tools:
 
 ### Phase 1: 메타데이터 로드 및 재실행 확인
 
-1. `.claude/docs/{project-name}/implement.yaml` 존재 여부 확인:
-   - 파일이 있으면 → 재실행 (Phase 2에서 이전 base_branch 사용)
+1. **파라미터 파싱**: `--base <branch>` 파라미터가 있으면 저장 (Phase 2에서 사용)
+
+2. `.claude/docs/{project-name}/implement.yaml` 존재 여부 확인:
+   - 파일이 있으면 → 재실행 (단, `--base` 파라미터가 있으면 해당 값으로 override)
    - 파일이 없으면 → 첫 실행 (Phase 2에서 사용자에게 base_branch 물어봄)
 
 2. `.claude/docs/{project-name}/meta.yaml`에서 project.id를 추출한다
@@ -74,13 +101,17 @@ Batch 2 (병렬): [Related D] [Related E] [Related F]
 
 2. 프로젝트가 없거나 매칭되지 않으면 AskUserQuestion으로 선택 요청
 
-3. **Base Branch 지정**:
+3. **Base Branch 지정** (우선순위: 파라미터 > implement.yaml > 대화형 입력):
 
-   **3-1. implement.yaml 존재 여부 확인**
+   **3-1. 파라미터 확인 (최우선)**
+   - `--base <branch>` 파라미터가 제공되었으면 → 해당 branch 사용 (implement.yaml 무시)
+   - 파라미터가 없으면 → 3-2로 진행
+
+   **3-2. implement.yaml 존재 여부 확인**
    - 파일이 있으면 → `vibe_kanban.base_branch` 읽음 (재실행, 추가 질문 없음)
-   - 파일이 없으면 → 3-2로 진행 (첫 실행)
+   - 파일이 없으면 → 3-3으로 진행 (첫 실행)
 
-   **3-2. 첫 실행 시 사용자에게 base branch 물어보기**:
+   **3-3. 첫 실행 시 사용자에게 base branch 물어보기**:
    ```
    question: "이 implementation의 base branch를 지정하세요."
 
@@ -93,6 +124,9 @@ Batch 2 (병렬): [Related D] [Related E] [Related F]
    ```
 
    선택된 base_branch를 메모: `base_branch = "{user_selected_branch}"`
+
+   **Note**: `--base` 파라미터를 사용하면 implement.yaml의 설정을 override하므로,
+   재실행 시에도 다른 base branch로 PR을 생성할 수 있습니다.
 
 4. **참여할 repo 선택** (중요: 한 feature가 여러 repo에 걸칠 수 있음):
    ```
@@ -148,6 +182,7 @@ Blocker C: API 엔드포인트 → Backend
 
    - Linear Issue: {linear_issue_url}
    - TechSpec Document: {meta.yaml의 document.url}
+   - **Base Branch**: `{base_branch}` ← PR 생성 시 반드시 이 branch를 target으로!
 
    ## 관련 테스트 케이스
 
@@ -190,7 +225,14 @@ Blocker C: API 엔드포인트 → Backend
    ## Commit & PR
 
    1. 변경사항 commit (conventional commit format)
-   2. Draft PR 생성: `gh pr create --draft --title "{issue title}" --body "..."`
+   2. Draft PR 생성:
+      ```bash
+      gh pr create --draft --base {base_branch} --title "{issue title}" --body "..."
+      ```
+
+      ⚠️ **중요**: `--base {base_branch}` 플래그 필수!
+      - 이 feature의 target branch: `{base_branch}`
+      - `--base` 없이 실행하면 `main`으로 PR 생성됨 (잘못된 동작)
 
    ## Linear 동기화 (필수)
 
@@ -440,7 +482,41 @@ Claude: Implementation 재개!
   Batch 2: 2개 workspace session 실행 중
 ```
 
-참고:
+## Example: --base 파라미터로 Base Branch Override
+
+```
+사용자: /tdd:implement --base develop  # implement.yaml이 있어도 develop 사용
+
+Claude: .claude/docs/my-feature/implement.yaml 을 발견했습니다. (재실행)
+Claude: --base 파라미터 감지: develop (implement.yaml의 feature/new-cart 대신 사용)
+Claude: .claude/docs/my-feature/meta.yaml 에서 project.id를 로드합니다...
+Claude: Linear에서 "tdd" label issue를 조회합니다...
+  → Linear issues (2 related - Batch 2)
+
+Claude: [AskUserQuestion] 다음 배치를 병렬로 실행합니다:
+
+  Base Branch: develop (--base 파라미터로 override됨)
+
+  Batch 2 (Related):
+  - Wishlist 저장 기능
+  - Cart 미니 뷰
+
+사용자: 진행
+
+Claude: Vibe Kanban에 task 생성 중...
+Claude: Workspace session 시작 중... (모두 develop base branch 사용)
+
+Claude: Implementation 재개!
+  Project: my-feature
+  TechSpec: https://linear.app/daangn/document/fe-techspec-xxx
+  Repos: Frontend, Backend API
+  Base Branch: develop (--base 파라미터로 지정)
+  Batch 2: 2개 workspace session 실행 중
+```
+
+## 참고
+
 - implement.yaml이 있으면 저장된 base_branch를 바로 사용 (다시 묻지 않음)
 - 모든 새로운 task/workspace는 이전과 동일한 base branch로 실행됨
-- Base branch를 변경하려면 implement.yaml을 수동으로 편집해야 함
+- **`--base` 파라미터를 사용하면 implement.yaml 설정을 override할 수 있음**
+- implement.yaml을 수동으로 편집해도 base branch 변경 가능
