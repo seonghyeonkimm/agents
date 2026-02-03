@@ -117,33 +117,57 @@ spec.md의 테스트 케이스 + Figma 디자인 (sources.figma가 있는 경우
 
 ### Phase 4: 결과 저장
 
-`.claude/docs/{project-name}/design.md`에 결과를 저장한다:
+spec.md 파일에 Design 섹션을 추가한다:
+
+1. **Edit으로 spec.md 업데이트**
+   - Functional Requirements 섹션 뒤에 다음 섹션 추가:
+     - Design (Domain & Entity, Usecase, Component & States, Integration)
+     - Component & Code - Client
+     - Verification
+
+2. **spec.md frontmatter의 `spec` 섹션에 entities, commands 추가**:
+   ```yaml
+   spec:
+     entities: ["{Entity1}", "{Entity2}"]
+     commands: ["{Command1}", "{Command2}"]
+     test_case_count: {N}
+     acceptance_criteria_count: {N}
+   ```
+
+**추가되는 섹션 형식:**
 
 ```markdown
----
-project:
-  id: "{project-id}"
-  name: "{project-name}"
-spec_ref: ".claude/docs/{project-name}/spec.md"
-domain:
-  entities: ["{Entity1}", "{Entity2}"]
-  usecases: ["{Usecase1}", "{Usecase2}"]
-components:
-  pages: ["{Page1}", "{Page2}"]
-  shared: ["{SharedComponent1}"]
-created_at: "{ISO-8601}"
----
+## Design
 
-{Phase 2 + Phase 3의 설계 결과}
+### 1. Domain & Entity
+실제 코드 타입과 1:1 매칭
+
+### 2. Usecase
+Input → Output 테이블
+
+### 3. Component & States
+컴포넌트 계층 + State 설계
+
+### 4. Usecase-Component Integration
+연결 지점 테이블
+
+## Component & Code - Client
+파일 구조, 컴포넌트 분해
+
+## Verification
+⚠️ Integration Test 최우선
+- Integration Tests (필수): TC 기반 테스트 테이블
+- Unit Tests (필요 시): 복잡한 로직만
+- E2E Tests (필요 시): 전체 플로우만
 ```
 
 ### Phase 5: Linear 문서 업데이트
 
-spec.md frontmatter의 `document.id`로 기존 TechSpec 문서를 업데이트한다:
+spec.md frontmatter의 `document.id`로 TechSpec 문서에 Design 섹션을 추가한다:
 
 ```
 ToolSearch(query: "select:mcp__plugin_linear_linear__update_document")
-→ Design, Component & Code 섹션을 설계 결과로 갱신
+→ Design, Component & Code, Verification 섹션 추가
 ```
 
 ### Phase 6: 결과 보고
@@ -160,10 +184,12 @@ Client Architecture:
 - Components: {N}개
 - Shared: {shared component list}
 
-Local: .claude/docs/{project-name}/design.md
+Local: .claude/docs/{project-name}/spec.md (Design 섹션 추가됨)
 Linear: {document URL} (Design 섹션 업데이트됨)
 
-다음 단계: 설계를 리뷰하세요.
+다음 단계:
+1. 설계를 리뷰하세요
+2. /tdd:issues 로 Linear 이슈를 생성하세요
 ```
 
 ### Phase 7: (Human) Review
@@ -199,5 +225,5 @@ Claude: Design 완료!
   - Components: 8개
   - Shared: Button, QuantitySelector
 
-  Local: .claude/docs/my-feature/design.md
+  Local: .claude/docs/my-feature/spec.md (Design 섹션 추가됨)
 ```

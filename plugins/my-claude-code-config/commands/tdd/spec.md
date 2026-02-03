@@ -79,16 +79,6 @@ ToolSearch로 MCP 도구를 로드한 뒤 컨텍스트를 수집한다.
 5. **Functional Requirements (Given/When/Then)**:
    - ⚠️ Entity/Command 헤더 없이 테이블만 작성
    - 정상 → 에러 → 엣지 케이스 순서로 테스트 케이스 테이블 작성
-6. **Design**: ⚠️ 아래 순서로 구조화
-   - 1. Domain & Entity: 실제 코드 타입과 1:1 매칭
-   - 2. Usecase: Input → Output 테이블
-   - 3. Component & States: 컴포넌트 계층 + State 설계
-   - 4. Usecase-Component Integration: 연결 지점 테이블
-7. **Component & Code - Client**: 파일 구조, 컴포넌트 분해
-8. **Verification**: ⚠️ Integration Test 최우선
-   - Integration Tests (필수): TC 기반 테스트 테이블
-   - Unit Tests (필요 시): 복잡한 로직만
-   - E2E Tests (필요 시): 전체 플로우만
 
 ### Phase 4: Linear 문서 생성
 
@@ -121,8 +111,6 @@ sources:
   prd: "{notion-url-or-null}"
   figma: "{figma-url-or-null}"
 spec:
-  entities: ["{Entity1}", "{Entity2}"]
-  commands: ["{Command1}", "{Command2}"]
   test_case_count: {N}
   acceptance_criteria_count: {N}
 created_at: "{ISO-8601}"
@@ -148,13 +136,10 @@ Local: .claude/docs/{project-name}/spec.md
 - Acceptance Criteria ({N}개)
 - Non-Functional Requirements
 - Functional Requirements ({N}개 테스트 케이스)
-- Design (Domain/Usecase/Component/Integration)
-- Component & Code
-- Verification (Integration Test 중심)
 
 다음 단계:
 1. Linear에서 문서를 리뷰하세요
-2. /tdd:design 으로 도메인 설계를 진행하세요
+2. /tdd:design 으로 Domain/Usecase/Component 설계를 추가하세요
 ```
 
 ### Phase 7: (Human) Review
