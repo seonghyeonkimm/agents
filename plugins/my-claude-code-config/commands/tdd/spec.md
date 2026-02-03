@@ -43,12 +43,14 @@ ToolSearch로 MCP 도구를 로드한 뒤 컨텍스트를 수집한다.
    → mcp__plugin_linear_linear__get_project(query: "{project identifier}")
    ```
 
-2. **PRD 내용 조회** (URL 제공 시):
+2. **PRD 내용 조회** (URL 제공 시, ⚠️ 반드시 실행):
    ```
    ToolSearch(query: "select:mcp__plugin_Notion_notion__notion-fetch")
    → mcp__plugin_Notion_notion__notion-fetch(url: "{notion_url}")
    ```
+   - PRD URL이 있으면 반드시 fetch하여 컨텍스트 수집
    - 핵심 요구사항, 유저 스토리, 성공 지표를 추출
+   - fetch 실패 시에만 PRD 없이 진행
 
 3. **Figma 디자인 컨텍스트** (URL 제공 시):
    ```
@@ -56,6 +58,8 @@ ToolSearch로 MCP 도구를 로드한 뒤 컨텍스트를 수집한다.
    → mcp__plugin_figma_figma__get_design_context(url: "{figma_url}")
    ```
    - 컴포넌트 구조, UI 흐름을 추출
+   - ⚠️ **UI 표시 문구 검증**: 테이블 컬럼명, 버튼 라벨, 상태 표시 텍스트 확인
+   - 가정하지 말고 피그마 variants에서 실제 문구 추출
 
 ### Phase 3: TechSpec 작성
 
@@ -67,14 +71,24 @@ ToolSearch로 MCP 도구를 로드한 뒤 컨텍스트를 수집한다.
 **작성 순서:**
 
 1. **Summary**: 프로젝트 배경 + PRD/Figma 링크
-2. **Solution**: PRD 요구사항과 Figma 디자인을 분석하여 기술적 해결책 서술
+2. **Solution**: ⚠️ 기술 용어 없이 비즈니스 관점에서 핵심 변경사항 요약
+   - 번호 매기기 형식으로 3-5개 핵심 변경사항 나열
+   - 코드, API, 타입명 사용 금지
 3. **Acceptance Criteria**: PRD 유저 스토리에서 테스트 가능한 기준 도출
 4. **Non-Functional Requirements**: 해당되는 경우에만 작성 (Performance, A11y, SEO)
 5. **Functional Requirements (Given/When/Then)**:
-   - Entity와 Command를 식별
+   - ⚠️ Entity/Command 헤더 없이 테이블만 작성
    - 정상 → 에러 → 엣지 케이스 순서로 테스트 케이스 테이블 작성
-6. **Design**: 컴포넌트 계층, 상태 관리, API 계약
+6. **Design**: ⚠️ 아래 순서로 구조화
+   - 1. Domain & Entity: 실제 코드 타입과 1:1 매칭
+   - 2. Usecase: Input → Output 테이블
+   - 3. Component & States: 컴포넌트 계층 + State 설계
+   - 4. Usecase-Component Integration: 연결 지점 테이블
 7. **Component & Code - Client**: 파일 구조, 컴포넌트 분해
+8. **Verification**: ⚠️ Integration Test 최우선
+   - Integration Tests (필수): TC 기반 테스트 테이블
+   - Unit Tests (필요 시): 복잡한 로직만
+   - E2E Tests (필요 시): 전체 플로우만
 
 ### Phase 4: Linear 문서 생성
 
@@ -130,12 +144,13 @@ Local: .claude/docs/{project-name}/spec.md
 
 작성된 섹션:
 - Summary (PRD/Figma 링크 포함)
-- Solution
+- Solution (핵심 변경사항)
 - Acceptance Criteria ({N}개)
 - Non-Functional Requirements
 - Functional Requirements ({N}개 테스트 케이스)
-- Design
+- Design (Domain/Usecase/Component/Integration)
 - Component & Code
+- Verification (Integration Test 중심)
 
 다음 단계:
 1. Linear에서 문서를 리뷰하세요
