@@ -21,9 +21,14 @@ allowed-tools:
 
 ### Phase 1: 대화 분석
 
-현재 대화 전체를 분석하여 Agent, Skill, Command, CLAUDE.md 후보를 식별합니다.
+현재 대화 전체를 분석하여 Agent, Skill, Command, **Rules**, CLAUDE.md 후보를 식별합니다.
 
 > **참조**: `claude-config-patterns` 스킬의 "식별 기준" 섹션
+
+**Rules 식별 기준:**
+- 세션 시작 시 자동 로드되어야 하는 지침인가?
+- 프로젝트 전역에 적용되는 정책인가?
+- 특정 파일 패턴에만 적용되어야 하는가? (조건부 규칙)
 
 ### Phase 2: 사용자 확인
 
@@ -42,6 +47,8 @@ AskUserQuestion:
           description: "{설명}"
         - label: "[Command] {name}"
           description: "{설명}"
+        - label: "[Rules] {name}"
+          description: "{정책/지침 설명}"
         - label: "[CLAUDE.md] {내용 요약}"
           description: "{상세 설명}"
 ```
@@ -49,6 +56,25 @@ AskUserQuestion:
 ### Phase 3: 파일 반영
 
 사용자가 선택한 항목만 반영:
+
+#### 3.1 기존 파일 확인
+선택된 각 항목에 대해:
+1. 동일 이름의 파일이 이미 존재하는지 Glob으로 확인
+2. 존재하면 → UPDATE 모드 (기존 내용과 병합/확장)
+3. 없으면 → CREATE 모드 (신규 생성)
+
+#### 3.2 충돌 처리
+기존 파일과 이름이 같을 경우 AskUserQuestion으로 확인:
+- **덮어쓰기**: 기존 내용 대체
+- **병합**: 기존 내용에 새 내용 추가
+- **다른 이름**: 새 이름으로 생성
+- **건너뛰기**: 해당 항목 생략
+
+#### 3.3 파일 생성/수정 실행
+1. `claude-config-patterns` 스킬의 해당 템플릿 참조
+2. 대화에서 추출한 내용으로 템플릿 채우기
+3. 체크리스트로 검증
+4. 파일 작성 (Write/Edit 도구 사용)
 
 > **참조**: `claude-config-patterns` 스킬의 템플릿, 체크리스트, 디렉토리 구조
 
@@ -69,13 +95,15 @@ Claude: 대화를 분석합니다...
 Options:
 □ [Agent] setup-project - 프로젝트 초기화 자동화
 □ [Skill] api-error-handling - API 에러 처리 패턴
+□ [Rules] security - 시크릿 관리 및 인증 규칙
 □ [CLAUDE.md] 새로운 환경변수 추가
 
-사용자: setup-project, CLAUDE.md 선택
+사용자: setup-project, security, CLAUDE.md 선택
 
 Claude:
 완료! 다음 파일이 업데이트되었습니다:
 - .claude/agents/setup-project.md (신규 생성)
+- .claude/rules/security.md (기존 파일에 규칙 추가)
 - CLAUDE.md (환경변수 섹션 업데이트)
 ```
 
