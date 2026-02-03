@@ -109,7 +109,7 @@ Related Issues:
 
 ### Phase 3.5: Label 확인/생성
 
-Issue 생성 전에 "ads-fe/tdd" label을 확인한다:
+Issue 생성 전에 "tdd" label을 확인한다:
 
 ```
 ToolSearch(query: "select:mcp__plugin_linear_linear__list_issue_labels")
@@ -117,13 +117,13 @@ list_issue_labels(team: "{team}", name: "tdd")
 ```
 
 **조회 결과:**
-- `"ads-fe/tdd"` label 있음 → Phase 4로 진행
-- `"ads-fe/tdd"` label 없음 → 사용자에게 안내:
+- `"tdd"` label 있음 → Phase 4로 진행
+- `"tdd"` label 없음 → 사용자에게 안내:
   ```
-  ⚠️ "ads-fe/tdd" label이 Linear에 없습니다.
+  ⚠️ "tdd" label이 Linear에 없습니다.
   Linear에서 다음 단계를 수행하세요:
   1. Project Settings → Labels
-  2. "ads-fe/tdd" label 생성 (또는 생성 확인)
+  2. "tdd" label 생성 (또는 생성 확인)
   3. 다시 /tdd:issues 실행
   ```
 
@@ -177,7 +177,7 @@ npx vitest run       # Test
 ```
 """,
   priority: {blocker=2(High), related=3(Medium)},
-  labels: ["ads-fe/tdd"],
+  labels: ["tdd"],
   project: "{project name or id}"
 )
 ```
@@ -189,7 +189,7 @@ mcp__plugin_linear_linear__create_issue(
   team: "{team}",
   description: "{상세 구현 내용}",
   parent: "{parent issue id}",
-  labels: ["ads-fe/tdd"],
+  labels: ["tdd"],
   project: "{project name or id}"
 )
 ```
@@ -201,7 +201,7 @@ Issue 생성 완료!
 
 Project: {Project Name}
 Linear: {project url}
-Label: ads-fe/tdd
+Label: tdd
 
 Blocker Issues ({N}개):
 - {issue title} ({linear url})
@@ -218,7 +218,7 @@ Total: {total}개 issues
 - 각 issue에는 Red-Green-Refactor 워크플로우가 포함되어 있습니다
 - 테스트 먼저 작성 → 최소 구현 → 리팩토링 순서로 진행하세요
 
-조회: list_issues(project: "{project-id}", labels: ["ads-fe/tdd"])
+조회: list_issues(project: "{project-id}", labels: ["tdd"])
 
 다음 단계:
 - /tdd:implement: 병렬 워크스페이스로 자동 구현 시작
@@ -230,8 +230,8 @@ Total: {total}개 issues
 /tdd:implement는 다음과 같이 issues 생성 여부를 확인한다:
 
 1. meta.yaml에서 project.id 읽기
-2. Linear 조회: `list_issues(project: "{project-id}", labels: ["ads-fe/tdd"])`
-3. "ads-fe/tdd" label issue 존재 여부 확인
+2. Linear 조회: `list_issues(project: "{project-id}", labels: ["tdd"])`
+3. "tdd" label issue 존재 여부 확인
    - 있음 → 구현 진행
    - 없음 → "/tdd:issues 먼저 실행하세요" 안내
 
@@ -249,7 +249,7 @@ Total: {total}개 issues
 | `## Design` 섹션 없음 | `/tdd:design`을 먼저 실행하라고 안내 |
 | Linear team 식별 불가 | AskUserQuestion으로 팀 선택 요청 |
 | Issue 생성 중 실패 | 성공한 issue 목록을 보고하고, 실패 건 재시도 안내 |
-| Label 'ads-fe/tdd'가 없음 | label 생성 안내 |
+| Label 'tdd'가 없음 | label 생성 안내 |
 
 ## Example
 

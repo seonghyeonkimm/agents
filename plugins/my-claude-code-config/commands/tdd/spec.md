@@ -103,7 +103,7 @@ project:
   id: "{project-id}"
   name: "{project-name}"
   url: "{linear-project-url}"
-  tdd_label: "ads-fe/tdd"
+  tdd_label: "tdd"
 document:
   id: "{document-id}"
   url: "{linear-document-url}"
