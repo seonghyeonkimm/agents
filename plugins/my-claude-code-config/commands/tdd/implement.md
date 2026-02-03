@@ -31,6 +31,8 @@ allowed-tools:
    ToolSearch(query: "select:mcp__plugin_linear_linear__list_issues")
    list_issues(project: "{project-id}", labels: ["tdd"])
    ```
+   - 응답에서 각 issue의 `id` (Linear API용)와 `url`을 추출하여 저장
+   - `id`는 Linear 동기화 API 호출에 사용됨
 3. 조회된 issue 목록을 Blocker/Related로 분류한다
 4. 병렬 실행 가능한 issue 배치를 결정한다:
 
@@ -162,7 +164,32 @@ Blocker C: API 엔드포인트 → Backend
 
    1. 변경사항 commit (conventional commit format)
    2. Draft PR 생성: `gh pr create --draft --title "{issue title}" --body "..."`
-   3. Linear issue에 PR URL 코멘트 추가
+
+   ## Linear 동기화 (필수)
+
+   이 task는 Linear issue와 연결되어 있습니다. 작업 진행에 따라 Linear를 업데이트하세요.
+
+   **Linear Issue ID**: `{issue_id}`
+
+   ### 작업 시작 시
+   Linear issue 상태를 "In Progress"로 변경:
+   ```
+   ToolSearch(query: "select:mcp__plugin_linear_linear__update_issue")
+   update_issue(id: "{issue_id}", state: "started")
+   ```
+
+   ### PR 생성 후
+   Linear issue에 PR 링크 연결 및 코멘트 추가:
+   ```
+   ToolSearch(query: "select:mcp__plugin_linear_linear__create_comment")
+   create_comment(issueId: "{issue_id}", body: "🔗 PR 생성됨: {pr_url}")
+   ```
+
+   ### 작업 완료 시
+   Linear issue 상태를 "Done"으로 변경:
+   ```
+   update_issue(id: "{issue_id}", state: "completed")
+   ```
    ````
 
 3. **Workspace Session 시작**:
@@ -201,11 +228,13 @@ batches:
     tasks:
       - task_id: "{vibe-task-id}"
         repo_id: "{frontend-repo-id}"  # Phase 3에서 매핑한 repo
+        issue_id: "{linear-issue-id}"  # Linear API 호출용 ID
         issue_url: "{linear-issue-url}"
         title: "{title}"
         status: "inprogress"
       - task_id: "{vibe-task-id}"
         repo_id: "{backend-repo-id}"   # 다른 repo일 수 있음
+        issue_id: "{linear-issue-id}"
         issue_url: "{linear-issue-url}"
         title: "{title}"
         status: "inprogress"
@@ -214,6 +243,7 @@ batches:
     tasks:
       - task_id: "{vibe-task-id}"
         repo_id: "{frontend-repo-id}"
+        issue_id: "{linear-issue-id}"
         issue_url: "{linear-issue-url}"
         title: "{title}"
         status: "todo"
