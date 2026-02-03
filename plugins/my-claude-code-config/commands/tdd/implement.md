@@ -1,6 +1,6 @@
 ---
 name: tdd/implement
-description: spec/design/issues 기반으로 병렬 워크스페이스를 생성하여 Red-Green-Refactor 방식으로 구현
+description: spec/design/issues 기반으로 병렬 워크스페이스를 생성하여 Red-Green-Refactor 방식으로 구현. Base branch를 현재 git branch 또는 사용자 입력으로 지정 가능
 allowed-tools:
   - Read
   - Write
@@ -23,18 +23,25 @@ allowed-tools:
 
 ## Execution Flow
 
-### Phase 1: 메타데이터 로드 및 Linear Issue 조회
+### Phase 1: 메타데이터 로드 및 재실행 확인
 
-1. `.claude/docs/{project-name}/meta.yaml`에서 project.id를 추출한다
-2. Linear에서 issue를 조회한다:
+1. `.claude/docs/{project-name}/implement.yaml` 존재 여부 확인:
+   - 파일이 있으면 → 재실행 (Phase 2에서 이전 base_branch 사용)
+   - 파일이 없으면 → 첫 실행 (Phase 2에서 사용자에게 base_branch 물어봄)
+
+2. `.claude/docs/{project-name}/meta.yaml`에서 project.id를 추출한다
+
+3. Linear에서 issue를 조회한다:
    ```
    ToolSearch(query: "select:mcp__plugin_linear_linear__list_issues")
    list_issues(project: "{project-id}", labels: ["tdd"])
    ```
    - 응답에서 각 issue의 `id` (Linear API용)와 `url`을 추출하여 저장
    - `id`는 Linear 동기화 API 호출에 사용됨
-3. 조회된 issue 목록을 Blocker/Related로 분류한다
-4. 병렬 실행 가능한 issue 배치를 결정한다:
+
+4. 조회된 issue 목록을 Blocker/Related로 분류한다
+
+5. 병렬 실행 가능한 issue 배치를 결정한다:
 
 **병렬화 규칙:**
 - **Batch 1**: Blocker issues (서로 의존성 없는 Blocker끼리는 병렬 가능)
@@ -46,7 +53,7 @@ Batch 1 (병렬): [Blocker A] [Blocker B] [Blocker C]
 Batch 2 (병렬): [Related D] [Related E] [Related F]
 ```
 
-5. AskUserQuestion으로 실행할 배치를 확인:
+6. AskUserQuestion으로 실행할 배치를 확인:
    ```
    question: "다음 배치를 병렬로 실행합니다. 진행할까요?"
 
@@ -58,7 +65,7 @@ Batch 2 (병렬): [Related D] [Related E] [Related F]
    - {issue title} → workspace session
    ```
 
-### Phase 2: Vibe Kanban 프로젝트 및 참여 Repo 설정
+### Phase 2: Vibe Kanban 프로젝트, Base Branch, 참여 Repo 설정
 
 1. vibe kanban 프로젝트를 확인한다:
    ```
@@ -67,7 +74,27 @@ Batch 2 (병렬): [Related D] [Related E] [Related F]
 
 2. 프로젝트가 없거나 매칭되지 않으면 AskUserQuestion으로 선택 요청
 
-3. **참여할 repo 선택** (중요: 한 feature가 여러 repo에 걸칠 수 있음):
+3. **Base Branch 지정**:
+
+   **3-1. implement.yaml 존재 여부 확인**
+   - 파일이 있으면 → `vibe_kanban.base_branch` 읽음 (재실행, 추가 질문 없음)
+   - 파일이 없으면 → 3-2로 진행 (첫 실행)
+
+   **3-2. 첫 실행 시 사용자에게 base branch 물어보기**:
+   ```
+   question: "이 implementation의 base branch를 지정하세요."
+
+   현재 git branch: feature/new-cart
+
+   기본값: feature/new-cart
+   또는 다른 branch: [main / develop / feature/new-api / ...]
+
+   입력하세요:
+   ```
+
+   선택된 base_branch를 메모: `base_branch = "{user_selected_branch}"`
+
+4. **참여할 repo 선택** (중요: 한 feature가 여러 repo에 걸칠 수 있음):
    ```
    ToolSearch(query: "select:mcp__vibe_kanban__list_repos")
    → list_repos(project_id: "{project_id}")
@@ -194,11 +221,11 @@ Blocker C: API 엔드포인트 → Backend
 
 3. **Workspace Session 시작**:
    ```
-   # Phase 3에서 매핑한 repo_id 사용
+   # Phase 3에서 매핑한 repo_id와 Phase 2에서 선택한 base_branch 사용
    mcp__vibe_kanban__start_workspace_session(
      task_id: "{task_id}",
      executor: "CLAUDE_CODE",
-     repos: [{ repo_id: "{task의-repo-id}", base_branch: "main" }]
+     repos: [{ repo_id: "{task의-repo-id}", base_branch: "{selected_base_branch}" }]
    )
    ```
 
@@ -215,13 +242,14 @@ document:
   url: "{linear-document-url}"  # meta.yaml에서 참조
 vibe_kanban:
   project_id: "{vibe-project-id}"
+  base_branch: "{selected_base_branch}"  # Phase 2에서 선택한 base branch
   repos:                          # Phase 2에서 선택한 repo 목록
     - id: "{frontend-repo-id}"
       name: "frontend"
-      base_branch: "main"
+      base_branch: "{selected_base_branch}"
     - id: "{backend-repo-id}"
       name: "backend"
-      base_branch: "main"
+      base_branch: "{selected_base_branch}"
 batches:
   - batch: 1
     type: blocker
@@ -305,6 +333,12 @@ Claude: .claude/docs/my-feature/meta.yaml 에서 project.id를 로드합니다..
 Claude: Linear에서 "tdd" label issue를 조회합니다...
   → Linear issues (3 blockers, 2 related)
 
+Claude: [AskUserQuestion] 이 implementation의 base branch를 지정하세요.
+  현재 git branch: feature/new-cart
+  추천: feature/new-cart
+
+사용자: feature/new-cart (기본값 선택)
+
 Claude: [AskUserQuestion] 이 feature에 참여할 repo를 선택하세요.
 
 사용자: Frontend
@@ -338,6 +372,12 @@ Claude: .claude/docs/my-feature/meta.yaml 에서 project.id를 로드합니다..
 Claude: Linear에서 "tdd" label issue를 조회합니다...
   → Linear issues (4 blockers, 3 related)
 
+Claude: [AskUserQuestion] 이 implementation의 base branch를 지정하세요.
+  현재 git branch: feature/cart-checkout
+  추천: feature/cart-checkout
+
+사용자: feature/cart-checkout (기본값 선택)
+
 Claude: [AskUserQuestion] 이 feature에 참여할 repo를 선택하세요.
 
 사용자: Frontend, Backend API
@@ -369,3 +409,38 @@ Claude: Implementation 시작!
 
 각 workspace는 해당 repo에서 작업하며, Draft PR이 각 repo에 생성됩니다.
 ```
+
+## Example: 재실행 (Base Branch 변경 없음)
+
+```
+사용자: /tdd:implement  # Batch 2를 계속하기 위해 재실행
+
+Claude: .claude/docs/my-feature/implement.yaml 을 발견했습니다. (재실행)
+Claude: 저장된 base branch: feature/new-cart
+Claude: .claude/docs/my-feature/meta.yaml 에서 project.id를 로드합니다...
+Claude: Linear에서 "tdd" label issue를 조회합니다...
+  → Linear issues (2 related - Batch 2)
+
+Claude: [AskUserQuestion] 다음 배치를 병렬로 실행합니다:
+
+  Batch 2 (Related):
+  - Wishlist 저장 기능
+  - Cart 미니 뷰
+
+사용자: 진행
+
+Claude: Vibe Kanban에 task 생성 중...
+Claude: Workspace session 시작 중... (모두 feature/new-cart base branch 사용)
+
+Claude: Implementation 재개!
+  Project: my-feature
+  TechSpec: https://linear.app/daangn/document/fe-techspec-xxx
+  Repos: Frontend, Backend API
+  Base Branch: feature/new-cart (이전과 동일)
+  Batch 2: 2개 workspace session 실행 중
+```
+
+참고:
+- implement.yaml이 있으면 저장된 base_branch를 바로 사용 (다시 묻지 않음)
+- 모든 새로운 task/workspace는 이전과 동일한 base branch로 실행됨
+- Base branch를 변경하려면 implement.yaml을 수동으로 편집해야 함
