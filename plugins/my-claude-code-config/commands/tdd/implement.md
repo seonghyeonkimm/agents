@@ -148,6 +148,7 @@ Blocker C: API 엔드포인트 → Backend
 
    - Linear Issue: {linear_issue_url}
    - TechSpec Document: {meta.yaml의 document.url}
+   - **Base Branch**: `{base_branch}` ← PR 생성 시 반드시 이 branch를 target으로!
 
    ## 관련 테스트 케이스
 
@@ -190,7 +191,14 @@ Blocker C: API 엔드포인트 → Backend
    ## Commit & PR
 
    1. 변경사항 commit (conventional commit format)
-   2. Draft PR 생성: `gh pr create --draft --title "{issue title}" --body "..."`
+   2. Draft PR 생성:
+      ```bash
+      gh pr create --draft --base {base_branch} --title "{issue title}" --body "..."
+      ```
+
+      ⚠️ **중요**: `--base {base_branch}` 플래그 필수!
+      - 이 feature의 target branch: `{base_branch}`
+      - `--base` 없이 실행하면 `main`으로 PR 생성됨 (잘못된 동작)
 
    ## Linear 동기화 (필수)
 
