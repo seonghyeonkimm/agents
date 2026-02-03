@@ -18,7 +18,7 @@ allowed-tools:
 
 - **필수**: `.claude/docs/{project-name}/meta.yaml` 존재 (`/tdd:spec` 실행 결과)
 - **필수**: Linear TechSpec 문서에 `/tdd:design` 결과물 포함 (Design 섹션)
-- **필수**: meta.yaml의 project.id로 Linear에서 "ads-fe/tdd" label issue 조회 가능 (`/tdd:issues`)
+- **필수**: meta.yaml의 project.id로 Linear에서 "tdd" label issue 조회 가능 (`/tdd:issues`)
 - **필수 MCP**: vibe_kanban, Linear plugin
 
 ## Execution Flow
@@ -29,7 +29,7 @@ allowed-tools:
 2. Linear에서 issue를 조회한다:
    ```
    ToolSearch(query: "select:mcp__plugin_linear_linear__list_issues")
-   list_issues(project: "{project-id}", labels: ["ads-fe/tdd"])
+   list_issues(project: "{project-id}", labels: ["tdd"])
    ```
 3. 조회된 issue 목록을 Blocker/Related로 분류한다
 4. 병렬 실행 가능한 issue 배치를 결정한다:
@@ -211,7 +211,7 @@ Commit 전 type check + biome check + test 통과 필수.
 |------|------|
 | meta.yaml 없음 | `/tdd:spec`을 먼저 실행하라고 안내 |
 | Linear issue 조회 실패 | `/tdd:issues`를 먼저 실행하라고 안내 |
-| "ads-fe/tdd" label issue 없음 | `/tdd:issues`를 먼저 실행하라고 안내 |
+| "tdd" label issue 없음 | `/tdd:issues`를 먼저 실행하라고 안내 |
 | Vibe Kanban 프로젝트 없음 | AskUserQuestion으로 프로젝트 선택 또는 생성 안내 |
 | Repo 정보 없음 | AskUserQuestion으로 repo 선택 요청 |
 | Session 시작 실패 | 에러 로그 출력, 수동 재시도 안내 |
@@ -222,7 +222,7 @@ Commit 전 type check + biome check + test 통과 필수.
 사용자: /tdd:implement
 
 Claude: .claude/docs/my-feature/meta.yaml 에서 project.id를 로드합니다...
-Claude: Linear에서 "ads-fe/tdd" label issue를 조회합니다...
+Claude: Linear에서 "tdd" label issue를 조회합니다...
   → Linear issues (3 blockers, 2 related)
 
 Claude: [AskUserQuestion] 다음 배치를 병렬로 실행합니다:
