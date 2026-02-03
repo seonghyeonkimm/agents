@@ -20,6 +20,7 @@ PLUGIN_FILES=(
   "commands/tdd/implement.md"
   "skills/claude-config-patterns/SKILL.md"
   "skills/code-dojo/SKILL.md"
+  "skills/domain-invariant-pattern/SKILL.md"
   "skills/fe-techspec/SKILL.md"
   "skills/fe-techspec/references/template.md"
 )
@@ -93,6 +94,7 @@ do_import() {
   mkdir -p "$CLAUDE_HOME/agents"
   mkdir -p "$CLAUDE_HOME/skills/claude-config-patterns"
   mkdir -p "$CLAUDE_HOME/skills/code-dojo"
+  mkdir -p "$CLAUDE_HOME/skills/domain-invariant-pattern"
   mkdir -p "$CLAUDE_HOME/skills/fe-techspec/references"
   mkdir -p "$CLAUDE_HOME/hooks"
 
