@@ -16,24 +16,32 @@ allowed-tools:
 
 ## Prerequisites
 
-- **필수**: `/tdd:spec` 실행 완료 → `.claude/docs/{project-name}/spec.md` 존재
+- **필수**: `/tdd:spec` 실행 완료 → `.claude/docs/{project-name}/meta.yaml` 존재
 - **필수 스킬**: `fe-techspec` - 설계 패턴 참조
+- **필수 MCP**: Linear plugin (문서 읽기/업데이트)
 - **선택 MCP**: Figma plugin (컴포넌트 상세 분석 시)
 
 ## Execution Flow
 
-### Phase 1: Spec 로드
+### Phase 1: 메타데이터 로드 및 Linear 문서 조회
 
-1. `.claude/docs/` 하위에서 프로젝트 spec 파일을 찾는다:
+1. `.claude/docs/` 하위에서 프로젝트 메타데이터 파일을 찾는다:
    ```
-   Glob(pattern: ".claude/docs/*/spec.md")
+   Glob(pattern: ".claude/docs/*/meta.yaml")
    ```
 2. 여러 프로젝트가 있으면 AskUserQuestion으로 선택 요청
-3. spec.md의 frontmatter에서 메타데이터, 본문에서 TechSpec 내용을 읽는다
+3. meta.yaml에서 `document.id`, `document.url`, `sources.figma` 등 메타데이터를 읽는다
+4. Linear에서 TechSpec 문서 내용을 조회한다:
+   ```
+   ToolSearch(query: "select:mcp__plugin_linear_linear__get_document")
+   → mcp__plugin_linear_linear__get_document(id: "{document.id}")
+   ```
+   - 문서 내용에서 **Functional Requirements (Given/When/Then)** 섹션 추출
+   - `get_document` 도구가 없으면, 사용자에게 Linear URL을 안내하고 수동 확인 요청
 
 ### Phase 2: Domain Entity & Usecase 추출
 
-spec.md의 **Functional Requirements (Given/When/Then)** 섹션을 분석하여:
+Linear TechSpec 문서의 **Functional Requirements (Given/When/Then)** 섹션을 분석하여:
 
 1. **Domain Entity 정의**:
    - 테스트 케이스의 Given/Then에서 상태를 가진 개체 식별
@@ -68,7 +76,7 @@ spec.md의 **Functional Requirements (Given/When/Then)** 섹션을 분석하여:
 
 ### Phase 3: Client Component & State 설계
 
-spec.md의 테스트 케이스 + Figma 디자인 (sources.figma가 있는 경우)을 기반으로:
+Linear TechSpec의 테스트 케이스 + Figma 디자인 (meta.yaml의 sources.figma가 있는 경우)을 기반으로:
 
 1. **Figma 컨텍스트 로드** (URL이 있는 경우):
    ```
@@ -115,26 +123,21 @@ spec.md의 테스트 케이스 + Figma 디자인 (sources.figma가 있는 경우
 - {state name}: {description}
 ```
 
-### Phase 4: 결과 저장
+### Phase 4: Linear 문서 업데이트
 
-spec.md 파일에 Design 섹션을 추가한다:
+⚠️ **로컬 파일 수정 없음** - Linear 문서만 업데이트한다 (Single Source of Truth)
 
-1. **Edit으로 spec.md 업데이트**
-   - Functional Requirements 섹션 뒤에 다음 섹션 추가:
-     - Design (Domain & Entity, Usecase, Component & States, Integration)
-     - Component & Code - Client
-     - Verification
+meta.yaml의 `document.id`로 TechSpec 문서에 Design 섹션을 추가한다:
 
-2. **spec.md frontmatter의 `spec` 섹션에 entities, commands 추가**:
-   ```yaml
-   spec:
-     entities: ["{Entity1}", "{Entity2}"]
-     commands: ["{Command1}", "{Command2}"]
-     test_case_count: {N}
-     acceptance_criteria_count: {N}
-   ```
+```
+ToolSearch(query: "select:mcp__plugin_linear_linear__update_document")
+→ mcp__plugin_linear_linear__update_document(
+    id: "{document.id}",
+    content: "{기존 내용 + 아래 섹션 추가}"
+  )
+```
 
-**추가되는 섹션 형식:**
+**추가되는 섹션:**
 
 ```markdown
 ## Design
@@ -161,16 +164,7 @@ Input → Output 테이블
 - E2E Tests (필요 시): 전체 플로우만
 ```
 
-### Phase 5: Linear 문서 업데이트
-
-spec.md frontmatter의 `document.id`로 TechSpec 문서에 Design 섹션을 추가한다:
-
-```
-ToolSearch(query: "select:mcp__plugin_linear_linear__update_document")
-→ Design, Component & Code, Verification 섹션 추가
-```
-
-### Phase 6: 결과 보고
+### Phase 5: 결과 보고
 
 ```
 Design 완료!
@@ -184,34 +178,38 @@ Client Architecture:
 - Components: {N}개
 - Shared: {shared component list}
 
-Local: .claude/docs/{project-name}/spec.md (Design 섹션 추가됨)
-Linear: {document URL} (Design 섹션 업데이트됨)
+Linear Document: {document URL} (Design 섹션 업데이트됨)
+* 로컬 파일 수정 없음 - Linear가 Single Source of Truth
 
 다음 단계:
-1. 설계를 리뷰하세요
+1. Linear에서 설계를 리뷰하세요
 2. /tdd:issues 로 Linear 이슈를 생성하세요
 ```
 
-### Phase 7: (Human) Review
+### Phase 6: (Human) Review
 
-사용자가 도메인 모델과 컴포넌트 설계를 리뷰한다.
+사용자가 Linear에서 도메인 모델과 컴포넌트 설계를 리뷰한다.
 
 ## Error Handling
 
 | 상황 | 대응 |
 |------|------|
-| spec.md가 없음 | `/tdd:spec`을 먼저 실행하라고 안내 |
-| spec.md에 테스트 케이스가 없음 | 최소한의 Entity/Usecase를 제안하고 확인 요청 |
+| meta.yaml이 없음 | `/tdd:spec`을 먼저 실행하라고 안내 |
+| Linear 문서 조회 실패 | 사용자에게 Linear URL 안내, 수동 확인 요청 |
+| Linear 문서에 테스트 케이스가 없음 | 최소한의 Entity/Usecase를 제안하고 확인 요청 |
 | Figma URL이 없음 | 테스트 케이스만으로 컴포넌트 설계 진행 |
-| Linear 문서 업데이트 실패 | 로컬 파일은 저장, 수동 복사 안내 |
+| Linear 문서 업데이트 실패 | 에러 메시지 출력, 재시도 안내 |
 
 ## Example
 
 ```
 사용자: /tdd:design
 
-Claude: .claude/docs/에서 spec 파일을 찾고 있습니다...
-  → .claude/docs/my-feature/spec.md 발견
+Claude: .claude/docs/에서 메타데이터 파일을 찾고 있습니다...
+  → .claude/docs/my-feature/meta.yaml 발견
+
+Claude: Linear에서 TechSpec 문서를 조회합니다...
+  → document.id: abc123
 
 Claude: 테스트 케이스를 분석하여 도메인 모델을 추출합니다...
 
@@ -225,5 +223,5 @@ Claude: Design 완료!
   - Components: 8개
   - Shared: Button, QuantitySelector
 
-  Local: .claude/docs/my-feature/spec.md (Design 섹션 추가됨)
+  Linear Document: https://linear.app/daangn/document/fe-techspec-xxx (Design 섹션 추가됨)
 ```

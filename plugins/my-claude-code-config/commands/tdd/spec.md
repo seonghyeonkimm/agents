@@ -91,19 +91,19 @@ ToolSearch(query: "select:mcp__plugin_linear_linear__create_document")
   )
 ```
 
-### Phase 5: 결과 저장
+### Phase 5: 메타데이터 저장
 
-`.claude/docs/{project-name}/spec.md`에 결과를 저장한다. `{project-name}`은 Linear 프로젝트 이름을 kebab-case로 변환한 값.
+`.claude/docs/{project-name}/meta.yaml`에 **메타데이터만** 저장한다. `{project-name}`은 Linear 프로젝트 이름을 kebab-case로 변환한 값.
 
-파일 형식 (YAML frontmatter + 생성된 TechSpec 전문):
+⚠️ **TechSpec 전문은 저장하지 않는다** - Linear 문서가 Single Source of Truth.
 
-```markdown
----
+```yaml
+# .claude/docs/{project-name}/meta.yaml
 project:
   id: "{project-id}"
   name: "{project-name}"
   url: "{linear-project-url}"
-  tdd_label: "ads-fe/tdd"
+  tdd_label: "tdd"
 document:
   id: "{document-id}"
   url: "{linear-document-url}"
@@ -111,25 +111,19 @@ document:
 sources:
   prd: "{notion-url-or-null}"
   figma: "{figma-url-or-null}"
-spec:
-  test_case_count: {N}
-  acceptance_criteria_count: {N}
 created_at: "{ISO-8601}"
----
-
-{Phase 3에서 생성한 TechSpec Markdown 전문}
 ```
 
-이 파일은 후속 command (`/tdd:design` 등)의 입력으로 사용된다.
+이 파일은 후속 command (`/tdd:design` 등)에서 Linear 리소스를 참조하는 데 사용된다.
 
 ### Phase 6: 결과 보고
 
 ```
 FE TechSpec 생성 완료!
 
-Document: {Linear Document URL}
+Linear Document: {Linear Document URL}
 Project: {Project Name}
-Local: .claude/docs/{project-name}/spec.md
+Metadata: .claude/docs/{project-name}/meta.yaml
 
 작성된 섹션:
 - Summary (PRD/Figma 링크 포함)
@@ -137,6 +131,8 @@ Local: .claude/docs/{project-name}/spec.md
 - Acceptance Criteria ({N}개)
 - Non-Functional Requirements
 - Functional Requirements ({N}개 테스트 케이스)
+
+⚠️ TechSpec 전문은 Linear 문서에만 저장됩니다 (Single Source of Truth)
 
 다음 단계:
 1. Linear에서 문서를 리뷰하세요
@@ -154,7 +150,7 @@ Local: .claude/docs/{project-name}/spec.md
 | Linear 프로젝트를 찾을 수 없음 | 프로젝트 목록을 보여주고 선택 요청 |
 | Notion PRD fetch 실패 | PRD 없이 진행, Summary에 명시 |
 | Figma fetch 실패 | Figma 없이 진행, Design 섹션 스킵 |
-| Linear 문서 생성 실패 | 생성된 내용을 로컬 파일로 저장 후 안내 |
+| Linear 문서 생성 실패 | 에러 메시지 출력, 재시도 안내 (로컬 저장 없음) |
 | MCP 도구 로드 실패 | 에러 메시지와 함께 플러그인 활성화 방법 안내 |
 
 ## Example
@@ -176,6 +172,7 @@ Claude: [TechSpec 작성 중...]
 Claude: [Linear 문서 생성 중...]
 
 Claude: FE TechSpec 생성 완료!
-  Document: https://linear.app/daangn/document/fe-techspec-xxx
+  Linear Document: https://linear.app/daangn/document/fe-techspec-xxx
+  Metadata: .claude/docs/my-feature/meta.yaml
   ...
 ```
