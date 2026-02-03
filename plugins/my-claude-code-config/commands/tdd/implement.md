@@ -16,16 +16,16 @@ allowed-tools:
 
 ## Prerequisites
 
-- **필수**: `.claude/docs/{project-name}/spec.md` (`/tdd:spec`)
-- **필수**: `.claude/docs/{project-name}/design.md` (`/tdd:design`)
-- **필수**: spec.md의 project.id로 Linear에서 "ads-fe/tdd" label issue 조회 가능 (`/tdd:issues`)
+- **필수**: `.claude/docs/{project-name}/meta.yaml` 존재 (`/tdd:spec` 실행 결과)
+- **필수**: Linear TechSpec 문서에 `/tdd:design` 결과물 포함 (Design 섹션)
+- **필수**: meta.yaml의 project.id로 Linear에서 "ads-fe/tdd" label issue 조회 가능 (`/tdd:issues`)
 - **필수 MCP**: vibe_kanban, Linear plugin
 
 ## Execution Flow
 
-### Phase 1: 문서 로드 및 Linear Issue 조회
+### Phase 1: 메타데이터 로드 및 Linear Issue 조회
 
-1. `.claude/docs/{project-name}/spec.md`에서 project.id를 추출한다
+1. `.claude/docs/{project-name}/meta.yaml`에서 project.id를 추출한다
 2. Linear에서 issue를 조회한다:
    ```
    ToolSearch(query: "select:mcp__plugin_linear_linear__list_issues")
@@ -44,7 +44,7 @@ Batch 1 (병렬): [Blocker A] [Blocker B] [Blocker C]
 Batch 2 (병렬): [Related D] [Related E] [Related F]
 ```
 
-4. AskUserQuestion으로 실행할 배치를 확인:
+5. AskUserQuestion으로 실행할 배치를 확인:
    ```
    question: "다음 배치를 병렬로 실행합니다. 진행할까요?"
 
@@ -85,16 +85,15 @@ Batch 2 (병렬): [Related D] [Related E] [Related F]
    ## Context
 
    - Linear Issue: {linear_issue_url}
-   - Spec: .claude/docs/{project-name}/spec.md
-   - Design: .claude/docs/{project-name}/design.md
+   - TechSpec Document: {meta.yaml의 document.url}
 
    ## 관련 테스트 케이스
 
-   {issues.md에서 해당 issue의 Given/When/Then 테이블}
+   {Linear TechSpec 문서에서 해당 issue의 Given/When/Then 테이블}
 
    ## 관련 설계
 
-   {design.md에서 해당 Entity/Usecase/Component 정보}
+   {Linear TechSpec 문서의 Design 섹션에서 해당 Entity/Usecase/Component 정보}
 
    ## TDD Workflow (Red-Green-Refactor)
 
@@ -142,18 +141,17 @@ Batch 2 (병렬): [Related D] [Related E] [Related F]
    )
    ```
 
-### Phase 4: 결과 저장
+### Phase 4: 실행 상태 저장
 
-`.claude/docs/{project-name}/implement.md`에 실행 상태를 저장한다:
+`.claude/docs/{project-name}/implement.yaml`에 실행 상태를 저장한다:
 
-```markdown
----
+```yaml
+# .claude/docs/{project-name}/implement.yaml
 project:
   id: "{project-id}"
   name: "{project-name}"
-spec_ref: ".claude/docs/{project-name}/spec.md"
-design_ref: ".claude/docs/{project-name}/design.md"
-issues_ref: ".claude/docs/{project-name}/issues.md"
+document:
+  url: "{linear-document-url}"  # meta.yaml에서 참조
 vibe_kanban:
   project_id: "{vibe-project-id}"
 batches:
@@ -172,19 +170,6 @@ batches:
         title: "{title}"
         status: "todo"
 created_at: "{ISO-8601}"
----
-
-## Batch 1 (Blocker)
-
-| Task | Linear Issue | Vibe Status | PR |
-|------|-------------|-------------|-----|
-| {title} | {url} | inprogress | - |
-
-## Batch 2 (Related)
-
-| Task | Linear Issue | Vibe Status | PR |
-|------|-------------|-------------|-----|
-| {title} | {url} | todo | - |
 ```
 
 ### Phase 5: 결과 보고
@@ -193,6 +178,7 @@ created_at: "{ISO-8601}"
 Implementation 시작!
 
 Project: {Project Name}
+TechSpec: {document URL}
 Vibe Kanban: {project_id}
 
 Batch 1 (Blocker) - 병렬 실행 중:
@@ -203,7 +189,7 @@ Batch 2 (Related) - 대기 중:
 - {task title}
 - {task title}
 
-Local: .claude/docs/{project-name}/implement.md
+Status: .claude/docs/{project-name}/implement.yaml
 
 각 워크스페이스는 Red-Green-Refactor로 진행됩니다.
 Commit 전 type check + biome check + test 통과 필수.
@@ -223,7 +209,7 @@ Commit 전 type check + biome check + test 통과 필수.
 
 | 상황 | 대응 |
 |------|------|
-| spec.md 또는 design.md 누락 | `/tdd:spec` 또는 `/tdd:design` 실행 안내 |
+| meta.yaml 없음 | `/tdd:spec`을 먼저 실행하라고 안내 |
 | Linear issue 조회 실패 | `/tdd:issues`를 먼저 실행하라고 안내 |
 | "ads-fe/tdd" label issue 없음 | `/tdd:issues`를 먼저 실행하라고 안내 |
 | Vibe Kanban 프로젝트 없음 | AskUserQuestion으로 프로젝트 선택 또는 생성 안내 |
@@ -235,10 +221,8 @@ Commit 전 type check + biome check + test 통과 필수.
 ```
 사용자: /tdd:implement
 
-Claude: .claude/docs/my-feature/spec.md 에서 project.id를 로드합니다...
+Claude: .claude/docs/my-feature/meta.yaml 에서 project.id를 로드합니다...
 Claude: Linear에서 "ads-fe/tdd" label issue를 조회합니다...
-  → spec.md (12 test cases)
-  → design.md (3 entities, 4 usecases)
   → Linear issues (3 blockers, 2 related)
 
 Claude: [AskUserQuestion] 다음 배치를 병렬로 실행합니다:
@@ -254,7 +238,8 @@ Claude: Vibe Kanban에 task 생성 중...
 Claude: Workspace session 시작 중...
 
 Claude: Implementation 시작!
+  Project: my-feature
+  TechSpec: https://linear.app/daangn/document/fe-techspec-xxx
   Batch 1: 3개 workspace session 실행 중
   Batch 2: 2개 대기 중
-  Local: .claude/docs/my-feature/implement.md
 ```
