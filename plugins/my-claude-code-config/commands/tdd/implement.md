@@ -1,6 +1,6 @@
 ---
 name: tdd/implement
-description: spec/design/issues 기반으로 병렬 워크스페이스를 생성하여 Red-Green-Refactor 방식으로 구현
+description: spec/design/issues 기반으로 병렬 워크스페이스를 생성하여 Red-Green-Refactor 방식으로 구현. Base branch를 현재 git branch 또는 사용자 입력으로 지정 가능
 allowed-tools:
   - Read
   - Write
@@ -58,7 +58,7 @@ Batch 2 (병렬): [Related D] [Related E] [Related F]
    - {issue title} → workspace session
    ```
 
-### Phase 2: Vibe Kanban 프로젝트 및 참여 Repo 설정
+### Phase 2: Vibe Kanban 프로젝트, Base Branch, 참여 Repo 설정
 
 1. vibe kanban 프로젝트를 확인한다:
    ```
@@ -67,7 +67,27 @@ Batch 2 (병렬): [Related D] [Related E] [Related F]
 
 2. 프로젝트가 없거나 매칭되지 않으면 AskUserQuestion으로 선택 요청
 
-3. **참여할 repo 선택** (중요: 한 feature가 여러 repo에 걸칠 수 있음):
+3. **Base Branch 지정** (새로 추가됨):
+   - 현재 git branch를 확인하고, 우선순위 순서대로 base branch 결정:
+     1. `implement.yaml`에 저장된 이전 base_branch (재실행 시)
+     2. 현재 git branch (보통 feature branch)
+     3. 사용자 직접 입력
+
+   AskUserQuestion으로 base branch 확인:
+   ```
+   question: "이 implementation의 base branch를 지정하세요."
+
+   현재 git branch: feature/new-cart
+   추천: feature/new-cart
+
+   또는 다른 branch 입력: [main / develop / feature/new-api / 사용자 입력]
+
+   선택: (기본값: feature/new-cart)
+   ```
+
+   선택된 base_branch를 메모: `base_branch = "{selected_branch}"`
+
+4. **참여할 repo 선택** (중요: 한 feature가 여러 repo에 걸칠 수 있음):
    ```
    ToolSearch(query: "select:mcp__vibe_kanban__list_repos")
    → list_repos(project_id: "{project_id}")
@@ -194,11 +214,11 @@ Blocker C: API 엔드포인트 → Backend
 
 3. **Workspace Session 시작**:
    ```
-   # Phase 3에서 매핑한 repo_id 사용
+   # Phase 3에서 매핑한 repo_id와 Phase 2에서 선택한 base_branch 사용
    mcp__vibe_kanban__start_workspace_session(
      task_id: "{task_id}",
      executor: "CLAUDE_CODE",
-     repos: [{ repo_id: "{task의-repo-id}", base_branch: "main" }]
+     repos: [{ repo_id: "{task의-repo-id}", base_branch: "{selected_base_branch}" }]
    )
    ```
 
@@ -215,13 +235,14 @@ document:
   url: "{linear-document-url}"  # meta.yaml에서 참조
 vibe_kanban:
   project_id: "{vibe-project-id}"
+  base_branch: "{selected_base_branch}"  # Phase 2에서 선택한 base branch
   repos:                          # Phase 2에서 선택한 repo 목록
     - id: "{frontend-repo-id}"
       name: "frontend"
-      base_branch: "main"
+      base_branch: "{selected_base_branch}"
     - id: "{backend-repo-id}"
       name: "backend"
-      base_branch: "main"
+      base_branch: "{selected_base_branch}"
 batches:
   - batch: 1
     type: blocker
@@ -305,6 +326,12 @@ Claude: .claude/docs/my-feature/meta.yaml 에서 project.id를 로드합니다..
 Claude: Linear에서 "tdd" label issue를 조회합니다...
   → Linear issues (3 blockers, 2 related)
 
+Claude: [AskUserQuestion] 이 implementation의 base branch를 지정하세요.
+  현재 git branch: feature/new-cart
+  추천: feature/new-cart
+
+사용자: feature/new-cart (기본값 선택)
+
 Claude: [AskUserQuestion] 이 feature에 참여할 repo를 선택하세요.
 
 사용자: Frontend
@@ -337,6 +364,12 @@ Claude: Implementation 시작!
 Claude: .claude/docs/my-feature/meta.yaml 에서 project.id를 로드합니다...
 Claude: Linear에서 "tdd" label issue를 조회합니다...
   → Linear issues (4 blockers, 3 related)
+
+Claude: [AskUserQuestion] 이 implementation의 base branch를 지정하세요.
+  현재 git branch: feature/cart-checkout
+  추천: feature/cart-checkout
+
+사용자: feature/cart-checkout (기본값 선택)
 
 Claude: [AskUserQuestion] 이 feature에 참여할 repo를 선택하세요.
 
