@@ -18,6 +18,7 @@ allowed-tools:
 
 - **필수**: `/tdd:spec` 실행 완료 → `.claude/docs/{project-name}/meta.yaml` 존재
 - **필수 스킬**: `fe-techspec` - 설계 패턴 참조
+- **필수 스킬**: `domain-invariant-pattern` - 불변식 헬퍼 함수 설계 참조
 - **필수 MCP**: Linear plugin (문서 읽기/업데이트)
 - **선택 MCP**: Figma plugin (컴포넌트 상세 분석 시)
 
@@ -61,8 +62,10 @@ Linear TechSpec 문서의 **Functional Requirements (Given/When/Then)** 섹션�
 ### Entities
 
 #### {EntityName}
-- **속성**: {property}: {type}
-- **불변식**: {invariant description}
+
+| 속성 | 타입 | 설명 |
+|------|------|------|
+| `{property}` | `{type}` | {설명} |
 
 ### Usecases
 
@@ -72,6 +75,50 @@ Linear TechSpec 문서의 **Functional Requirements (Given/When/Then)** 섹션�
 - **Output**: {output/side effects}
 - **Entity**: {related entities}
 - **Test Cases**: #{test case numbers}
+```
+
+### Phase 2.5: Invariant Helper 함수 설계
+
+`domain-invariant-pattern` 스킬을 참조하여 테스트 케이스에서 불변식을 추출한다.
+
+**추출 프로세스:**
+
+1. **Given에서 `is*` 함수 추출**: "~인 상태", "~가 설정된" 등의 조건에서 상태 체크 함수 도출
+2. **When에서 `can*` 함수 추출**: "시도하면 실패", "수정 불가" 등에서 가능 조건 도출
+3. **Then에서 `get*`, `should*` 함수 추출**: 파생 값, 조건부 동작 도출
+4. **의존성 순서 정의**: Layer 1 (is*) → Layer 2 (can*, get*) → Layer 3 (should*)
+
+**출력 형식:**
+
+```markdown
+### Invariant Helpers
+
+#### Layer 1: Base Conditions (is*)
+
+| 함수명 | 파라미터 | 반환 | 설명 | TC# |
+|--------|----------|------|------|-----|
+| `is{Condition}` | `entity: Entity` | `boolean` | {조건 설명} | #1,#2 |
+
+#### Layer 2: Derived (can*, get*)
+
+| 함수명 | 파라미터 | 반환 | 의존 | 설명 | TC# |
+|--------|----------|------|------|------|-----|
+| `can{Action}` | `entity: Entity` | `boolean` | `is*` | {가능 조건} | #1 |
+| `get{Value}` | `entity: Entity` | `Type` | `is*` | {파생 값} | #3 |
+
+#### Layer 3: Composite (should*)
+
+| 함수명 | 파라미터 | 반환 | 의존 | 설명 | TC# |
+|--------|----------|------|------|------|-----|
+| `should{Action}` | `entity: Entity` | `boolean` | `is*, can*` | {동작 조건} | #5 |
+
+#### Usage Map
+
+| Helper | UI | API | Test |
+|--------|-----|-----|------|
+| `is{Condition}` | 조건부 필드 | - | Given |
+| `can{Action}` | disabled 상태 | validation | When |
+| `get{Value}` | 표시 값 | request body | Then |
 ```
 
 ### Phase 3: Client Component & State 설계
@@ -145,22 +192,25 @@ ToolSearch(query: "select:mcp__plugin_linear_linear__update_document")
 ### 1. Domain & Entity
 실제 코드 타입과 1:1 매칭
 
-### 2. Usecase
-Input → Output 테이블
+### 2. Invariant Helpers
+Layer별 헬퍼 함수 명세 + Usage Map
 
-### 3. Component & States
+### 3. Usecase
+Input → Output 테이블 + 관련 헬퍼 함수
+
+### 4. Component & States
 컴포넌트 계층 + State 설계
 
-### 4. Usecase-Component Integration
-연결 지점 테이블
+### 5. Usecase-Component Integration
+연결 지점 테이블 + 사용되는 헬퍼 함수
 
 ## Component & Code - Client
-파일 구조, 컴포넌트 분해
+Entity 파일 내에 Invariant Helper 함수 포함
 
 ## Verification
 ⚠️ Integration Test 최우선
-- Integration Tests (필수): TC 기반 테스트 테이블
-- Unit Tests (필요 시): 복잡한 로직만
+- Integration Tests (필수): TC 기반 테스트 + 헬퍼 함수 사용
+- Unit Tests (필수): Invariant 헬퍼 함수별 단위 테스트
 - E2E Tests (필요 시): 전체 플로우만
 ```
 
