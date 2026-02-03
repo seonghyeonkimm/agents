@@ -52,13 +52,42 @@ SLA/SLO를 준수하며 시스템 요구사항을 정의해요. 해당 없으면
 |--------|------|------|
 | {Entity명} | {속성1}, {속성2}, ... | {설명} |
 
-### 2. Usecase
+### 2. Invariant Helpers
+
+⚠️ `domain-invariant-pattern` 스킬 참조. Given/When/Then에서 추출.
+
+#### Layer 1: Base Conditions (is*)
+
+| 함수명 | 파라미터 | 반환 | 설명 | TC# |
+|--------|----------|------|------|-----|
+| `is{Condition}` | `entity: Entity` | `boolean` | {상태 조건} | #1 |
+
+#### Layer 2: Derived (can*, get*)
+
+| 함수명 | 파라미터 | 반환 | 의존 | 설명 | TC# |
+|--------|----------|------|------|------|-----|
+| `can{Action}` | `entity: Entity` | `boolean` | `is*` | {가능 조건} | #2 |
+| `get{Value}` | `entity: Entity` | `Type` | `is*` | {파생 값} | #3 |
+
+#### Layer 3: Composite (should*)
+
+| 함수명 | 파라미터 | 반환 | 의존 | 설명 | TC# |
+|--------|----------|------|------|------|-----|
+| `should{Action}` | `entity: Entity` | `boolean` | `is*, can*` | {동작 조건} | #4 |
+
+#### Usage Map
+
+| Helper | UI | API | Test |
+|--------|-----|-----|------|
+| `is{Condition}` | {용도} | {용도} | {용도} |
+
+### 3. Usecase
 
 | Usecase | Input | Output |
 |---------|-------|--------|
 | {Usecase명} | {입력} | {출력} |
 
-### 3. Component & States
+### 4. Component & States
 
 컴포넌트 계층 + State 설계.
 
@@ -69,7 +98,7 @@ Page
 │   └── Component2
 ```
 
-### 4. Usecase-Component Integration
+### 5. Usecase-Component Integration
 
 | Usecase | Component | 연결 방식 |
 |---------|-----------|----------|

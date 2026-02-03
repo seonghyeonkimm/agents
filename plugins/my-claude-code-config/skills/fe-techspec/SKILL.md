@@ -8,6 +8,8 @@ description: |
 
 # FE TechSpec
 
+**관련 스킬:** `domain-invariant-pattern` - 불변식 헬퍼 함수 설계 패턴
+
 FE TechSpec은 프로젝트의 기술적 구현 방향을 정의하는 문서. PRD(요구사항)와 Figma(디자인)를 기반으로 Solution, Acceptance Criteria, Test Cases를 도출한다.
 
 ## 문서 구조
@@ -107,13 +109,23 @@ SLA/SLO 기준의 시스템 요구사항.
 1. **Domain & Entity**: 핵심 도메인 객체와 속성 정의
    - Entity는 실제 코드의 타입/인터페이스와 1:1 매칭
    - 속성(Property)을 별도 Entity로 분리하지 않음
-2. **Usecase**: 주요 사용 시나리오 테이블 (Input → Output)
-3. **Component & States**: 컴포넌트 계층 + State 설계
-4. **Usecase-Component Integration**: 연결 지점 정의
+2. **Invariant Helpers**: 불변식을 헬퍼 함수로 추출
+   - Given에서 `is*` 함수 추출 (상태 조건)
+   - When에서 `can*` 함수 추출 (가능 조건)
+   - Then에서 `get*`, `should*` 함수 추출 (파생 값, 동작 조건)
+   - `domain-invariant-pattern` 스킬 참조
+3. **Usecase**: 주요 사용 시나리오 테이블 (Input → Output + 관련 헬퍼)
+4. **Component & States**: 컴포넌트 계층 + State 설계
+5. **Usecase-Component Integration**: 연결 지점 정의
 
 **Entity 작성 가이드:**
 - ✅ `AdGroup` Entity에 `biddingType`, `deliveryType` 속성 포함
 - ❌ `BiddingType`, `DeliveryType`을 별도 Entity로 정의
+
+**Invariant Helper 가이드:**
+- ✅ 여러 곳에서 재사용되는 비즈니스 규칙 → 헬퍼 함수로 추출
+- ❌ 한 번만 사용되는 단순 조건 → 인라인으로 유지
+- 의존성 순서: is* → can*, get* → should*
 
 ### Component & Code - Client
 - Test cases 기반으로 module, entity, usecase 추출
@@ -150,3 +162,6 @@ SLA/SLO 기준의 시스템 요구사항.
 | UI 문구 가정 | Figma 미확인 | variants에서 실제 문구 추출 |
 | FR에 Entity/Command 헤더 | 지침 오해 | Design에서만 사용, FR은 테이블만 |
 | Verification 누락 | 선택사항으로 오인 | Integration Test 필수 |
+| 불변식 누락 | Given/When/Then에서 조건만 보고 헬퍼 미추출 | `domain-invariant-pattern` 스킬 참조 |
+| 헬퍼 함수 중복 | UI/API에서 같은 조건을 각각 구현 | 공통 invariants.ts에 Single Source of Truth |
+| 의존성 순서 오류 | can* 함수가 다른 can* 함수 호출 | Layer 구조 준수 (is* → can* → should*) |
