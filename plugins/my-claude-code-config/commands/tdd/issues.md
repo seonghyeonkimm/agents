@@ -15,24 +15,41 @@ allowed-tools:
 
 ## Prerequisites
 
-- **필수**: `.claude/docs/{project-name}/spec.md` 존재 (`/tdd:spec` 완료)
-- **필수**: `.claude/docs/{project-name}/design.md` 존재 (`/tdd:design` 완료)
+- **필수**: `.claude/docs/{project-name}/spec.md` 존재
+- **필수**: `spec.md`에 `/tdd:spec` 결과물 포함 (Functional Requirements 섹션)
+- **필수**: `spec.md`에 `/tdd:design` 결과물 포함 (Design, Component & Code, Verification 섹션)
 - **필수 MCP**: Linear plugin 활성화
 
 ## Execution Flow
 
-### Phase 1: 문서 로드
+### Phase 1: 문서 로드 및 검증
 
 1. `.claude/docs/` 하위에서 프로젝트 디렉토리를 찾는다:
    ```
    Glob(pattern: ".claude/docs/*/spec.md")
    ```
 2. 여러 프로젝트가 있으면 AskUserQuestion으로 선택 요청
-3. spec.md와 design.md를 모두 읽는다
-   - spec.md: entities, commands, test cases, acceptance criteria
-   - design.md: domain model, usecases, component tree
+3. spec.md를 읽고 **필수 섹션 존재 여부를 검증**한다:
 
-design.md가 없으면 `/tdd:design`을 먼저 실행하라고 안내.
+**검증 체크리스트:**
+
+| 섹션 | 출처 | 필수 여부 |
+|------|------|----------|
+| `## Functional Requirements` | `/tdd:spec` | 필수 |
+| `## Design` | `/tdd:design` | 필수 |
+| `### 1. Domain & Entity` | `/tdd:design` | 필수 |
+| `### 2. Usecase` | `/tdd:design` | 필수 |
+| `## Component & Code - Client` | `/tdd:design` | 필수 |
+| `## Verification` | `/tdd:design` | 필수 |
+
+**검증 실패 시:**
+- `## Functional Requirements` 없음 → `/tdd:spec`을 먼저 실행하라고 안내
+- `## Design` 없음 → `/tdd:design`을 먼저 실행하라고 안내
+
+4. 검증 통과 시 spec.md에서 다음 정보를 추출한다:
+   - frontmatter: entities, commands, test_case_count
+   - Functional Requirements: Given/When/Then 테스트 케이스
+   - Design: domain model, usecases, component tree
 
 ### Phase 2: Issue 분류
 
@@ -194,7 +211,8 @@ Local: .claude/docs/{project-name}/issues.md
 | 상황 | 대응 |
 |------|------|
 | spec.md 없음 | `/tdd:spec`을 먼저 실행하라고 안내 |
-| design.md 없음 | `/tdd:design`을 먼저 실행하라고 안내 |
+| `## Functional Requirements` 섹션 없음 | `/tdd:spec`을 먼저 실행하라고 안내 |
+| `## Design` 섹션 없음 | `/tdd:design`을 먼저 실행하라고 안내 |
 | Linear team 식별 불가 | AskUserQuestion으로 팀 선택 요청 |
 | Issue 생성 중 실패 | 성공한 issue 목록을 저장하고, 실패 건 재시도 안내 |
 | Label 'TechSpec'이 없음 | label 없이 생성하거나 새 label 생성 |
