@@ -129,6 +129,11 @@ list_issue_labels(team: "{team}", name: "tdd")
 
 ### Phase 4: Linear Issue 생성
 
+> **CRITICAL: 모든 issue 생성 시 반드시 `labels: ["tdd"]`를 포함해야 합니다.**
+> - 이 label이 없으면 `/tdd:implement`에서 issue를 찾을 수 없습니다
+> - label 누락 시 전체 TDD 워크플로우가 실패합니다
+> - 절대 생략하지 마세요!
+
 MCP 도구를 로드하고 issue를 생성한다.
 
 ```
@@ -177,7 +182,7 @@ npx vitest run       # Test
 ```
 """,
   priority: {blocker=2(High), related=3(Medium)},
-  labels: ["tdd"],
+  labels: ["tdd"],  # ⚠️ REQUIRED - 절대 생략 금지! /tdd:implement 연동에 필수
   project: "{project name or id}"
 )
 ```
@@ -189,10 +194,27 @@ mcp__plugin_linear_linear__create_issue(
   team: "{team}",
   description: "{상세 구현 내용}",
   parent: "{parent issue id}",
-  labels: ["tdd"],
+  labels: ["tdd"],  # ⚠️ REQUIRED - 절대 생략 금지! /tdd:implement 연동에 필수
   project: "{project name or id}"
 )
 ```
+
+### Phase 4.5: Label 검증 (필수)
+
+Issue 생성 완료 후, 모든 issue에 "tdd" label이 붙었는지 검증한다:
+
+```
+ToolSearch(query: "select:mcp__plugin_linear_linear__list_issues")
+list_issues(project: "{project-id}", labels: ["tdd"])
+```
+
+**검증:**
+- 생성한 issue 수 == 조회된 issue 수 → Phase 5로 진행
+- 불일치 시 → 누락된 issue 식별 후 label 추가:
+  ```
+  ToolSearch(query: "select:mcp__plugin_linear_linear__update_issue")
+  update_issue(id: "{issue-id}", labels: ["tdd"])
+  ```
 
 ### Phase 5: 결과 보고
 
@@ -250,6 +272,8 @@ Total: {total}개 issues
 | Linear team 식별 불가 | AskUserQuestion으로 팀 선택 요청 |
 | Issue 생성 중 실패 | 성공한 issue 목록을 보고하고, 실패 건 재시도 안내 |
 | Label 'tdd'가 없음 | label 생성 안내 |
+| Issue 생성 시 label 누락 | `update_issue`로 "tdd" label 즉시 추가 |
+| Phase 4.5 검증 실패 | 누락된 issue에 label 추가 후 재검증 |
 
 ## Example
 
