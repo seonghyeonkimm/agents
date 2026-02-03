@@ -102,6 +102,26 @@ Related Issues:
 
 사용자가 수정을 요청하면 반영 후 다시 확인.
 
+### Phase 3.5: Label 확인/생성
+
+Issue 생성 전에 "ads-fe/tdd" label을 확인한다:
+
+```
+ToolSearch(query: "select:mcp__plugin_linear_linear__list_issue_labels")
+list_issue_labels(team: "{team}", name: "tdd")
+```
+
+**조회 결과:**
+- `"ads-fe/tdd"` label 있음 → Phase 4로 진행
+- `"ads-fe/tdd"` label 없음 → 사용자에게 안내:
+  ```
+  ⚠️ "ads-fe/tdd" label이 Linear에 없습니다.
+  Linear에서 다음 단계를 수행하세요:
+  1. Project Settings → Labels
+  2. "ads-fe/tdd" label 생성 (또는 생성 확인)
+  3. 다시 /tdd:issues 실행
+  ```
+
 ### Phase 4: Linear Issue 생성
 
 MCP 도구를 로드하고 issue를 생성한다.
@@ -125,7 +145,7 @@ mcp__plugin_linear_linear__create_issue(
   team: "{team from spec.md project}",
   description: "{관련 AC, test cases, design 내용 요약}",
   priority: {blocker=2(High), related=3(Medium)},
-  labels: ["TechSpec"],
+  labels: ["ads-fe/tdd"],
   project: "{project name or id}"
 )
 ```
@@ -137,6 +157,7 @@ mcp__plugin_linear_linear__create_issue(
   team: "{team}",
   description: "{상세 구현 내용}",
   parent: "{parent issue id}",
+  labels: ["ads-fe/tdd"],
   project: "{project name or id}"
 )
 ```
@@ -148,6 +169,7 @@ Issue 생성 완료!
 
 Project: {Project Name}
 Linear: {project url}
+Label: ads-fe/tdd
 
 Blocker Issues ({N}개):
 - {issue title} ({linear url})
@@ -160,8 +182,7 @@ Total: {total}개 issues
 
 ---
 
-조회 방법: Linear에서 직접 확인하거나
-`list_issues(project: "{project-id}")` 로 조회
+조회: list_issues(project: "{project-id}", labels: ["ads-fe/tdd"])
 
 다음 단계: /tdd:implement 또는 Linear에서 담당자 배정
 ```
