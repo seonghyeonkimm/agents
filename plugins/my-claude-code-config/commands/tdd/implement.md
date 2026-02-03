@@ -18,16 +18,21 @@ allowed-tools:
 
 - **필수**: `.claude/docs/{project-name}/spec.md` (`/tdd:spec`)
 - **필수**: `.claude/docs/{project-name}/design.md` (`/tdd:design`)
-- **필수**: `.claude/docs/{project-name}/issues.md` (`/tdd:issues`)
+- **필수**: spec.md의 project.id로 Linear에서 "ads-fe/tdd" label issue 조회 가능 (`/tdd:issues`)
 - **필수 MCP**: vibe_kanban, Linear plugin
 
 ## Execution Flow
 
-### Phase 1: 문서 로드 및 병렬화 판단
+### Phase 1: 문서 로드 및 Linear Issue 조회
 
-1. `.claude/docs/{project-name}/` 에서 세 파일을 모두 읽는다
-2. issues.md에서 issue 목록과 Blocker/Related 분류를 파악한다
-3. 병렬 실행 가능한 issue 배치를 결정한다:
+1. `.claude/docs/{project-name}/spec.md`에서 project.id를 추출한다
+2. Linear에서 issue를 조회한다:
+   ```
+   ToolSearch(query: "select:mcp__plugin_linear_linear__list_issues")
+   list_issues(project: "{project-id}", labels: ["ads-fe/tdd"])
+   ```
+3. 조회된 issue 목록을 Blocker/Related로 분류한다
+4. 병렬 실행 가능한 issue 배치를 결정한다:
 
 **병렬화 규칙:**
 - **Batch 1**: Blocker issues (서로 의존성 없는 Blocker끼리는 병렬 가능)
@@ -218,21 +223,23 @@ Commit 전 type check + biome check + test 통과 필수.
 
 | 상황 | 대응 |
 |------|------|
-| 필수 문서 누락 | 누락된 command를 안내 (`/tdd:spec`, `/tdd:design`, `/tdd:issues`) |
+| spec.md 또는 design.md 누락 | `/tdd:spec` 또는 `/tdd:design` 실행 안내 |
+| Linear issue 조회 실패 | `/tdd:issues`를 먼저 실행하라고 안내 |
+| "ads-fe/tdd" label issue 없음 | `/tdd:issues`를 먼저 실행하라고 안내 |
 | Vibe Kanban 프로젝트 없음 | AskUserQuestion으로 프로젝트 선택 또는 생성 안내 |
 | Repo 정보 없음 | AskUserQuestion으로 repo 선택 요청 |
 | Session 시작 실패 | 에러 로그 출력, 수동 재시도 안내 |
-| 이미 실행 중인 배치 | implement.md를 확인하여 상태 보고 |
 
 ## Example
 
 ```
 사용자: /tdd:implement
 
-Claude: .claude/docs/my-feature/ 에서 문서를 로드합니다...
+Claude: .claude/docs/my-feature/spec.md 에서 project.id를 로드합니다...
+Claude: Linear에서 "ads-fe/tdd" label issue를 조회합니다...
   → spec.md (12 test cases)
   → design.md (3 entities, 4 usecases)
-  → issues.md (3 blockers, 2 related)
+  → Linear issues (3 blockers, 2 related)
 
 Claude: [AskUserQuestion] 다음 배치를 병렬로 실행합니다:
 

@@ -102,6 +102,26 @@ Related Issues:
 
 사용자가 수정을 요청하면 반영 후 다시 확인.
 
+### Phase 3.5: Label 확인/생성
+
+Issue 생성 전에 "ads-fe/tdd" label을 확인한다:
+
+```
+ToolSearch(query: "select:mcp__plugin_linear_linear__list_issue_labels")
+list_issue_labels(team: "{team}", name: "tdd")
+```
+
+**조회 결과:**
+- `"ads-fe/tdd"` label 있음 → Phase 4로 진행
+- `"ads-fe/tdd"` label 없음 → 사용자에게 안내:
+  ```
+  ⚠️ "ads-fe/tdd" label이 Linear에 없습니다.
+  Linear에서 다음 단계를 수행하세요:
+  1. Project Settings → Labels
+  2. "ads-fe/tdd" label 생성 (또는 생성 확인)
+  3. 다시 /tdd:issues 실행
+  ```
+
 ### Phase 4: Linear Issue 생성
 
 MCP 도구를 로드하고 issue를 생성한다.
@@ -125,7 +145,7 @@ mcp__plugin_linear_linear__create_issue(
   team: "{team from spec.md project}",
   description: "{관련 AC, test cases, design 내용 요약}",
   priority: {blocker=2(High), related=3(Medium)},
-  labels: ["TechSpec"],
+  labels: ["ads-fe/tdd"],
   project: "{project name or id}"
 )
 ```
@@ -137,74 +157,49 @@ mcp__plugin_linear_linear__create_issue(
   team: "{team}",
   description: "{상세 구현 내용}",
   parent: "{parent issue id}",
+  labels: ["ads-fe/tdd"],
   project: "{project name or id}"
 )
 ```
 
-### Phase 5: 결과 저장
-
-`.claude/docs/{project-name}/issues.md`에 결과를 저장한다:
-
-```markdown
----
-project:
-  id: "{project-id}"
-  name: "{project-name}"
-spec_ref: ".claude/docs/{project-name}/spec.md"
-design_ref: ".claude/docs/{project-name}/design.md"
-issues:
-  blocker_count: {N}
-  related_count: {N}
-  sub_issue_count: {N}
-  total: {N}
-created_at: "{ISO-8601}"
----
-
-## Blocker Issues
-
-| # | Issue | Linear URL | Sub-issues |
-|---|-------|-----------|------------|
-| 1 | {title} | {url} | {N}개 |
-
-## Related Issues
-
-| # | Issue | Linear URL | Sub-issues |
-|---|-------|-----------|------------|
-| 1 | {title} | {url} | {N}개 |
-
-## Issue Details
-
-### {Issue Title}
-- **URL**: {linear url}
-- **Type**: Blocker / Related
-- **Priority**: High / Medium
-- **Sub-issues**:
-  - {sub-issue title} ({url})
-```
-
-### Phase 6: 결과 보고
+### Phase 5: 결과 보고
 
 ```
 Issue 생성 완료!
 
 Project: {Project Name}
+Linear: {project url}
+Label: ads-fe/tdd
 
 Blocker Issues ({N}개):
-- {issue title} ({url})
+- {issue title} ({linear url})
 
 Related Issues ({N}개):
-- {issue title} ({url})
+- {issue title} ({linear url})
   └── {sub-issue count}개 sub-issues
 
 Total: {total}개 issues
-Local: .claude/docs/{project-name}/issues.md
 
-다음 단계: Linear에서 issue를 리뷰하고 담당자를 배정하세요.
+---
+
+조회: list_issues(project: "{project-id}", labels: ["ads-fe/tdd"])
+
+다음 단계: /tdd:implement 또는 Linear에서 담당자 배정
 ```
+
+### Phase 6: /tdd:implement 연동
+
+/tdd:implement는 다음과 같이 issues 생성 여부를 확인한다:
+
+1. spec.md에서 project.id 읽기
+2. Linear 조회: `list_issues(project: "{project-id}")`
+3. [TDD] 또는 [Blocker] prefix issue 존재 여부 확인
+   - 있음 → 구현 진행
+   - 없음 → "/tdd:issues 먼저 실행하세요" 안내
 
 ### Phase 7: (Human) Review
 
-사용자가 Linear에서 생성된 issue를 리뷰한다.
+사용자가 Linear에서 생성된 issue를 리뷰하고 담당자를 배정한다.
 
 ## Error Handling
 
@@ -214,7 +209,7 @@ Local: .claude/docs/{project-name}/issues.md
 | `## Functional Requirements` 섹션 없음 | `/tdd:spec`을 먼저 실행하라고 안내 |
 | `## Design` 섹션 없음 | `/tdd:design`을 먼저 실행하라고 안내 |
 | Linear team 식별 불가 | AskUserQuestion으로 팀 선택 요청 |
-| Issue 생성 중 실패 | 성공한 issue 목록을 저장하고, 실패 건 재시도 안내 |
+| Issue 생성 중 실패 | 성공한 issue 목록을 보고하고, 실패 건 재시도 안내 |
 | Label 'TechSpec'이 없음 | label 없이 생성하거나 새 label 생성 |
 
 ## Example
@@ -245,8 +240,19 @@ Claude: [AskUserQuestion] 다음 issue 구조로 생성합니다:
 Claude: Linear에 issue를 생성합니다...
 
 Claude: Issue 생성 완료!
-  Blocker: 3개
-  Related: 2개 (sub-issues 4개)
-  Total: 9개
-  Local: .claude/docs/my-feature/issues.md
+
+  Blocker Issues (3개):
+  - [Blocker] Cart Entity 및 Type 정의 (https://linear.com/issue/PROJ-1)
+  - [Blocker] Cart API 인터페이스 설계 (https://linear.com/issue/PROJ-2)
+  - [Blocker] 공통 컴포넌트 (QuantitySelector, Button) (https://linear.com/issue/PROJ-3)
+
+  Related Issues (2개):
+  - [Related] CartPage 구현 (https://linear.com/issue/PROJ-4)
+    └── 3개 sub-issues
+  - [Related] CartItem 컴포넌트 구현 (https://linear.com/issue/PROJ-5)
+
+  Total: 9개 issues
+
+  조회 방법: Linear에서 직접 확인하세요.
+  다음 단계: /tdd:implement으로 병렬 워크스페이스 생성
 ```
