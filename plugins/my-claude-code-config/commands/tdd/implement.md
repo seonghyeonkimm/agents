@@ -56,17 +56,50 @@ Batch 2 (병렬): [Related D] [Related E] [Related F]
    - {issue title} → workspace session
    ```
 
-### Phase 2: Vibe Kanban 프로젝트 설정
+### Phase 2: Vibe Kanban 프로젝트 및 참여 Repo 설정
 
-1. vibe kanban 프로젝트와 repo를 확인한다:
+1. vibe kanban 프로젝트를 확인한다:
    ```
    ToolSearch(query: "select:mcp__vibe_kanban__list_projects")
-   ToolSearch(query: "select:mcp__vibe_kanban__list_repos")
    ```
 
 2. 프로젝트가 없거나 매칭되지 않으면 AskUserQuestion으로 선택 요청
 
-### Phase 3: Task 생성 및 Session 시작
+3. **참여할 repo 선택** (중요: 한 feature가 여러 repo에 걸칠 수 있음):
+   ```
+   ToolSearch(query: "select:mcp__vibe_kanban__list_repos")
+   → list_repos(project_id: "{project_id}")
+   ```
+
+   AskUserQuestion으로 참여 repo 선택:
+   ```
+   question: "이 feature에 참여할 repo를 선택하세요. (복수 선택 가능)"
+
+   [ ] Frontend (repo-1-id)
+   [ ] Backend API (repo-2-id)
+   [ ] Mobile (repo-3-id)
+
+   예: Frontend, Backend API
+   ```
+
+   선택된 repo들을 메모: `repos = ["{repo-1-id}", "{repo-2-id}"]`
+
+### Phase 3: Issue별 Repo 매핑
+
+Linear 문서의 Design 섹션 또는 issue 제목/설명에서 어느 repo에 해당하는 작업인지 파악:
+
+- "Cart Entity" → Frontend 또는 Backend?
+- Issue 설명 또는 Design 섹션의 Component/Server 부분 참조
+- 명확하지 않으면 AskUserQuestion으로 확인
+
+매핑 예:
+```
+Blocker A: Cart Entity 정의 → Backend
+Blocker B: Cart UI Component → Frontend
+Blocker C: API 엔드포인트 → Backend
+```
+
+### Phase 4: Task 생성 및 Session 시작
 
 현재 배치의 각 issue에 대해:
 
@@ -134,14 +167,15 @@ Batch 2 (병렬): [Related D] [Related E] [Related F]
 
 3. **Workspace Session 시작**:
    ```
+   # Phase 3에서 매핑한 repo_id 사용
    mcp__vibe_kanban__start_workspace_session(
      task_id: "{task_id}",
      executor: "CLAUDE_CODE",
-     repos: [{ repo_id: "{repo_id}", base_branch: "main" }]
+     repos: [{ repo_id: "{task의-repo-id}", base_branch: "main" }]
    )
    ```
 
-### Phase 4: 실행 상태 저장
+### Phase 6: 실행 상태 저장
 
 `.claude/docs/{project-name}/implement.yaml`에 실행 상태를 저장한다:
 
@@ -154,11 +188,24 @@ document:
   url: "{linear-document-url}"  # meta.yaml에서 참조
 vibe_kanban:
   project_id: "{vibe-project-id}"
+  repos:                          # Phase 2에서 선택한 repo 목록
+    - id: "{frontend-repo-id}"
+      name: "frontend"
+      base_branch: "main"
+    - id: "{backend-repo-id}"
+      name: "backend"
+      base_branch: "main"
 batches:
   - batch: 1
     type: blocker
     tasks:
       - task_id: "{vibe-task-id}"
+        repo_id: "{frontend-repo-id}"  # Phase 3에서 매핑한 repo
+        issue_url: "{linear-issue-url}"
+        title: "{title}"
+        status: "inprogress"
+      - task_id: "{vibe-task-id}"
+        repo_id: "{backend-repo-id}"   # 다른 repo일 수 있음
         issue_url: "{linear-issue-url}"
         title: "{title}"
         status: "inprogress"
@@ -166,13 +213,14 @@ batches:
     type: related
     tasks:
       - task_id: "{vibe-task-id}"
+        repo_id: "{frontend-repo-id}"
         issue_url: "{linear-issue-url}"
         title: "{title}"
         status: "todo"
 created_at: "{ISO-8601}"
 ```
 
-### Phase 5: 결과 보고
+### Phase 7: 결과 보고
 
 ```
 Implementation 시작!
@@ -180,14 +228,16 @@ Implementation 시작!
 Project: {Project Name}
 TechSpec: {document URL}
 Vibe Kanban: {project_id}
+Repos: Frontend (repo-1), Backend (repo-2)
 
 Batch 1 (Blocker) - 병렬 실행 중:
-- {task title} → workspace session 시작됨
-- {task title} → workspace session 시작됨
+- [Frontend] {task title} → workspace session 시작됨
+- [Backend] {task title} → workspace session 시작됨
+- [Frontend] {task title} → workspace session 시작됨
 
 Batch 2 (Related) - 대기 중:
-- {task title}
-- {task title}
+- [Frontend] {task title}
+- [Backend] {task title}
 
 Status: .claude/docs/{project-name}/implement.yaml
 
@@ -197,11 +247,11 @@ Commit 전 type check + biome check + test 통과 필수.
 
 다음 단계:
 1. Conductor에서 각 워크스페이스 진행 상황을 모니터링하세요
-2. Draft PR을 리뷰하세요
+2. Draft PR을 리뷰하세요 (각 PR은 해당 repo에 생성됨)
 3. Batch 1 완료 후 Batch 2를 시작하려면 /tdd:implement를 다시 실행하세요
 ```
 
-### Phase 6: (Human) Review
+### Phase 8: (Human) Review
 
 사용자가 각 워크스페이스의 Draft PR을 검수하고 리뷰한다.
 
@@ -216,7 +266,7 @@ Commit 전 type check + biome check + test 통과 필수.
 | Repo 정보 없음 | AskUserQuestion으로 repo 선택 요청 |
 | Session 시작 실패 | 에러 로그 출력, 수동 재시도 안내 |
 
-## Example
+## Example: 단일 Repo
 
 ```
 사용자: /tdd:implement
@@ -224,6 +274,10 @@ Commit 전 type check + biome check + test 통과 필수.
 Claude: .claude/docs/my-feature/meta.yaml 에서 project.id를 로드합니다...
 Claude: Linear에서 "tdd" label issue를 조회합니다...
   → Linear issues (3 blockers, 2 related)
+
+Claude: [AskUserQuestion] 이 feature에 참여할 repo를 선택하세요.
+
+사용자: Frontend
 
 Claude: [AskUserQuestion] 다음 배치를 병렬로 실행합니다:
 
@@ -240,6 +294,48 @@ Claude: Workspace session 시작 중...
 Claude: Implementation 시작!
   Project: my-feature
   TechSpec: https://linear.app/daangn/document/fe-techspec-xxx
+  Repos: Frontend
   Batch 1: 3개 workspace session 실행 중
   Batch 2: 2개 대기 중
+```
+
+## Example: 다중 Repo (Frontend + Backend)
+
+```
+사용자: /tdd:implement
+
+Claude: .claude/docs/my-feature/meta.yaml 에서 project.id를 로드합니다...
+Claude: Linear에서 "tdd" label issue를 조회합니다...
+  → Linear issues (4 blockers, 3 related)
+
+Claude: [AskUserQuestion] 이 feature에 참여할 repo를 선택하세요.
+
+사용자: Frontend, Backend API
+
+Claude: Issue별 repo 매핑:
+  - Cart Entity 및 Type 정의 → Backend API
+  - Cart UI Component → Frontend
+  - Cart API 엔드포인트 → Backend API
+  - 공통 로직 (validation) → Backend API
+
+Claude: [AskUserQuestion] 다음 배치를 병렬로 실행합니다:
+
+  Batch 1 (Blocker - 병렬):
+  - [Backend] Cart Entity 및 Type 정의
+  - [Frontend] Cart UI Component
+  - [Backend] Cart API 엔드포인트
+
+사용자: 진행
+
+Claude: Vibe Kanban에 task 생성 중...
+Claude: Workspace session 시작 중...
+
+Claude: Implementation 시작!
+  Project: my-feature
+  TechSpec: https://linear.app/daangn/document/fe-techspec-xxx
+  Repos: Frontend, Backend API
+  Batch 1: 3개 workspace session 실행 중 (Frontend 1개, Backend 2개)
+  Batch 2: 3개 대기 중
+
+각 workspace는 해당 repo에서 작업하며, Draft PR이 각 repo에 생성됩니다.
 ```
