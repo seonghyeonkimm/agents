@@ -1,10 +1,11 @@
 ---
 name: claude-config-patterns
-description: Agent, Skill, Command 파일 작성 패턴 및 템플릿
+description: Agent, Skill, Command, Rules 파일 작성 패턴 및 템플릿
 globs:
   - ".claude/agents/**"
   - ".claude/skills/**"
   - ".claude/commands/**"
+  - ".claude/rules/**"
 ---
 
 # Claude Config Patterns
@@ -20,19 +21,28 @@ globs:
 | 타입 | 식별 기준 | 예시 |
 |------|-----------|------|
 | **Agent** | 여러 단계로 구성된 자동화 작업, 특정 도구 조합이 필요한 워크플로우 | "프로젝트 초기화", "배포 파이프라인" |
-| **Skill** | 특정 파일 패턴에 적용되는 규칙, 반복되는 코딩 컨벤션 | "API 에러 처리 패턴", "테스트 작성 규칙" |
+| **Skill** | 필요시 참조하는 패턴, 템플릿, 도메인 지식 | "API 에러 처리 패턴", "TechSpec 작성 템플릿" |
 | **Command** | 사용자가 자주 요청하는 작업, 인자를 받아 실행되는 반복 작업 | "/deploy", "/test-coverage" |
-| **CLAUDE.md** | 프로젝트 제약사항, API 사용 규칙, 디렉토리 구조 | "환경변수 추가", "라이브러리 사용 규칙" |
+| **Rules** | 세션 시작 시 자동 로드되어야 하는 프로젝트 지침/정책 | "보안 규칙", "코딩 스타일", "테스트 컨벤션" |
+| **CLAUDE.md** | 프로젝트 개요, 구조, 주요 명령어 | "환경변수 추가", "디렉토리 구조" |
 
-### Agent vs Skill vs Command 구분
+### 타입 구분 플로우차트
 
 ```
 Q: 도구(Read, Write, Bash 등)를 사용해야 하는가?
 ├─ Yes → Q: 사용자가 직접 호출하는가?
 │         ├─ Yes → Command
 │         └─ No → Agent
-└─ No → Skill (참조 문서)
+└─ No → Q: 세션 시작 시 자동 로드되어야 하는가?
+          ├─ Yes → Rules (프로젝트 지침, 자동 로드)
+          └─ No → Q: 명시적 호출 시에만 참조되는가?
+                    ├─ Yes → Skill (재사용 패턴/컨벤션)
+                    └─ No → CLAUDE.md (프로젝트 개요)
 ```
+
+**Rules vs Skills 선택 기준:**
+- **Rules**: 항상 적용되어야 하는 지침 (보안, 코딩 스타일, 테스트 규칙)
+- **Skills**: 필요할 때만 참조하는 패턴 (템플릿, 워크플로우, 도메인 지식)
 
 ---
 
@@ -42,11 +52,15 @@ Q: 도구(Read, Write, Bash 등)를 사용해야 하는가?
 .claude/
 ├── agents/           # 자동화 워크플로우 실행자
 │   └── {name}.md
-├── skills/           # 재사용 패턴 및 규칙 (참조용)
+├── skills/           # 재사용 패턴 및 규칙 (명시적 참조)
 │   └── {name}/
 │       └── SKILL.md
-└── commands/         # 사용자 명령어 (진입점)
-    └── {name}.md 또는 {category}/{name}.md
+├── commands/         # 사용자 명령어 (진입점)
+│   └── {name}.md 또는 {category}/{name}.md
+└── rules/            # 프로젝트 지침/정책 (자동 로드)
+    ├── {name}.md
+    └── {category}/   # 하위 디렉토리 지원
+        └── {name}.md
 ```
 
 ---
@@ -61,7 +75,10 @@ Q: 도구(Read, Write, Bash 등)를 사용해야 하는가?
 ---
 name: {agent-name}
 description: {한 줄 역할 설명}
-tools: {도구 목록 (공백 구분)}
+allowed-tools:        # 선택사항
+  - Read
+  - Write
+  - Bash
 ---
 
 # {Agent Name}
@@ -112,13 +129,13 @@ tools: {도구 목록 (공백 구분)}
 
 **위치:** `.claude/skills/{name}/SKILL.md`
 
-**용도:** 특정 파일 패턴에 자동 적용되는 참조 문서 (규칙, 패턴, 예제)
+**용도:** 필요시 참조하는 문서 (규칙, 패턴, 예제, 템플릿)
 
 ```yaml
 ---
 name: {skill-name}
 description: {한 줄 설명}
-globs:
+globs:                # 선택사항: 파일 패턴에 따라 자동 활성화
   - "{glob-pattern-1}"
   - "{glob-pattern-2}"
 ---
@@ -218,6 +235,85 @@ allowed-tools:
 
 ---
 
+## Rules 템플릿
+
+**위치:** `.claude/rules/{name}.md` (하위 디렉토리 지원)
+
+**용도:** 세션 시작 시 자동 로드되는 프로젝트 지침, 코딩 컨벤션, 정책
+
+**로딩:** 모든 `.md` 파일이 `.claude/CLAUDE.md`와 동일한 우선순위로 자동 로드됨
+
+### 무조건 적용 규칙
+
+Frontmatter 없이 작성하면 모든 파일 작업에 적용됩니다:
+
+```markdown
+# Security Rules
+
+## 시크릿 관리
+- 환경변수 사용 필수
+- .env 파일 gitignore 확인
+- 하드코딩된 API 키 금지
+
+## 인증/인가
+- JWT 토큰 만료 시간 설정
+- 민감한 엔드포인트에 인증 필수
+```
+
+### 조건부 적용 규칙
+
+`paths` frontmatter로 특정 파일 패턴에만 적용할 수 있습니다:
+
+> **참고**: Skill의 `globs`와 동일한 glob 패턴 문법을 사용하지만, Rules에서는 `paths`라는 키를 사용합니다.
+
+```markdown
+---
+paths:
+  - "src/api/**/*.ts"
+  - "src/services/**/*.ts"
+---
+
+# API Development Rules
+
+- 모든 API 엔드포인트에 입력 검증 필수
+- 표준 에러 응답 형식 사용
+- OpenAPI 문서 주석 포함
+```
+
+### Paths 패턴 가이드
+
+| 패턴 | 매칭 대상 |
+|------|-----------|
+| `**/*.ts` | 모든 디렉토리의 TypeScript 파일 |
+| `src/**/*` | src 디렉토리 하위 모든 파일 |
+| `*.md` | 프로젝트 루트의 마크다운 파일 |
+| `src/**/*.{ts,tsx}` | src 하위 ts/tsx 파일 (brace expansion) |
+| `{src,lib}/**/*.ts` | src 또는 lib 하위 ts 파일 |
+
+### Rules 네이밍 규칙
+
+- 단일 단어 또는 kebab-case: `security.md`, `code-style.md`
+- 도메인/주제 명확히: `testing.md`, `api-design.md`
+- 하위 디렉토리 활용: `frontend/react.md`, `backend/api.md`
+
+### Rules 예시 구조
+
+```
+.claude/rules/
+├── security.md           # 보안 정책
+├── code-style.md         # 코딩 스타일
+├── testing.md            # 테스트 컨벤션
+├── git-workflow.md       # Git 워크플로우
+├── frontend/
+│   ├── react.md          # React 컨벤션
+│   └── styles.md         # 스타일링 규칙
+└── backend/
+    ├── api.md            # API 설계
+    └── database.md       # DB 규칙
+```
+
+---
+
 ## CLAUDE.md 업데이트 가이드
 
 **위치:** 프로젝트 루트 `CLAUDE.md`
@@ -252,12 +348,12 @@ allowed-tools:
 
 ### Agent 생성 시
 - [ ] name이 kebab-case인가?
-- [ ] tools에 필요한 도구만 포함했는가?
+- [ ] allowed-tools에 필요한 도구만 포함했는가? (선택사항)
 - [ ] Workflow가 단계별로 명확한가?
 - [ ] Error Handling이 있는가?
 
 ### Skill 생성 시
-- [ ] globs가 정확한 패턴인가?
+- [ ] globs가 정확한 패턴인가? (선택사항: 자동 활성화가 필요한 경우만)
 - [ ] 규칙에 ✅/❌ 예시가 있는가?
 - [ ] 흔한 실수 섹션이 있는가?
 
@@ -265,3 +361,10 @@ allowed-tools:
 - [ ] arguments가 명확히 정의되었는가?
 - [ ] allowed-tools가 최소한인가?
 - [ ] Example이 있는가?
+
+### Rules 생성 시
+- [ ] 파일명이 kebab-case인가?
+- [ ] 한 파일에 하나의 주제만 다루는가?
+- [ ] 조건부 규칙인 경우 `paths` 패턴이 정확한가?
+- [ ] 명확한 섹션 구분이 있는가?
+- [ ] Rules vs Skills 구분이 적절한가? (자동 로드 vs 명시적 참조)
