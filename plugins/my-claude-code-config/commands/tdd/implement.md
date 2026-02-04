@@ -248,17 +248,18 @@ Blocker C: API 엔드포인트 → Backend
    ```
 
    ### PR 생성 후
-   Linear issue에 PR 링크 연결 및 코멘트 추가:
+   Linear issue 상태를 "In Review"로 변경하고 PR 링크 연결:
    ```
+   ToolSearch(query: "select:mcp__plugin_linear_linear__update_issue")
+   # "In Review" 상태 ID 확인: list_issue_statuses(team: "{your-team}")에서
+   # "In Review" name을 가진 상태의 id 사용
+   update_issue(id: "{issue_id}", stateId: "{in-review-state-id}")
+
    ToolSearch(query: "select:mcp__plugin_linear_linear__create_comment")
-   create_comment(issueId: "{issue_id}", body: "🔗 PR 생성됨: {pr_url}")
+   create_comment(issueId: "{issue_id}", body: "🔗 Draft PR 생성됨: {pr_url}")
    ```
 
-   ### 작업 완료 시
-   Linear issue 상태를 "Done"으로 변경:
-   ```
-   update_issue(id: "{issue_id}", state: "completed")
-   ```
+   > Note: "Done" 상태는 PR이 merge된 후 별도로 처리됩니다.
    ````
 
 3. **Workspace Session 시작**:
