@@ -204,6 +204,7 @@ Blocker C: API 엔드포인트 → Backend
 
    ### 3. Refactor - 리팩토링
    - 코드 품질 개선 (중복 제거, 네이밍 등)
+   - Business Rules에 해당하는 반복 로직은 `domain-invariant-pattern` 스킬을 참조하여 헬퍼 함수로 추출
    - 테스트 실행 → 여전히 성공 확인
 
    ## Commit 전 필수 체크

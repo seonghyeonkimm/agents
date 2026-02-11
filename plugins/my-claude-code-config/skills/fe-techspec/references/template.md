@@ -52,34 +52,15 @@ SLA/SLO를 준수하며 시스템 요구사항을 정의해요. 해당 없으면
 |--------|------|------|
 | {Entity명} | {속성1}, {속성2}, ... | {설명} |
 
-### 2. Invariant Helpers
+### 2. Business Rules
 
-⚠️ `domain-invariant-pattern` 스킬 참조. Given/When/Then에서 추출.
+⚠️ 테스트 케이스에서 비즈니스 규칙을 자연어로 추출. 함수명/시그니처는 구현 시 결정.
 
-#### Layer 1: Base Conditions (is*)
-
-| 함수명 | 파라미터 | 반환 | 설명 | TC# |
-|--------|----------|------|------|-----|
-| `is{Condition}` | `entity: Entity` | `boolean` | {상태 조건} | #1 |
-
-#### Layer 2: Derived (can*, get*)
-
-| 함수명 | 파라미터 | 반환 | 의존 | 설명 | TC# |
-|--------|----------|------|------|------|-----|
-| `can{Action}` | `entity: Entity` | `boolean` | `is*` | {가능 조건} | #2 |
-| `get{Value}` | `entity: Entity` | `Type` | `is*` | {파생 값} | #3 |
-
-#### Layer 3: Composite (should*)
-
-| 함수명 | 파라미터 | 반환 | 의존 | 설명 | TC# |
-|--------|----------|------|------|------|-----|
-| `should{Action}` | `entity: Entity` | `boolean` | `is*, can*` | {동작 조건} | #4 |
-
-#### Usage Map
-
-| Helper | UI | API | Test |
-|--------|-----|-----|------|
-| `is{Condition}` | {용도} | {용도} | {용도} |
+| Rule ID | 관련 Entity | 규칙 유형 | 규칙 설명 | TC# |
+|---------|------------|----------|----------|-----|
+| BR-1 | {Entity명} | 상태 조건 | {자연어 설명} | #1 |
+| BR-2 | {Entity명} | 행동 제약 | {자연어 설명} | #2 |
+| BR-3 | {Entity명} | 결과 규칙 | {자연어 설명} | #3 |
 
 ### 3. Usecase
 

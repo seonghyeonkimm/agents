@@ -44,7 +44,8 @@ allowed-tools:
 | `## Functional Requirements` | `/tdd:spec` | 필수 |
 | `## Design` | `/tdd:design` | 필수 |
 | `### 1. Domain & Entity` | `/tdd:design` | 필수 |
-| `### 2. Usecase` | `/tdd:design` | 필수 |
+| `### 2. Business Rules` | `/tdd:design` | 필수 |
+| `### 3. Usecase` | `/tdd:design` | 필수 |
 | `## Component & Code - Client` | `/tdd:design` | 필수 |
 | `## Verification` | `/tdd:design` | 필수 |
 
