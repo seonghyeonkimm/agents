@@ -2,8 +2,8 @@
 name: domain-invariant-pattern
 description: |
   도메인 불변식(Invariant)을 재사용 가능한 헬퍼 함수로 추출하는 패턴.
-  Use when: Entity 설계 시 비즈니스 규칙 추출, 테스트 케이스에서 조건 식별,
-  UI/API/테스트에서 동일 로직 재사용이 필요할 때.
+  Use when: TDD Refactor 단계에서 비즈니스 규칙을 헬퍼 함수로 추출할 때,
+  Entity 구현 시 비즈니스 규칙 코드화, UI/API/테스트에서 동일 로직 재사용이 필요할 때.
 globs:
   - "**/_models/**/*.ts"
   - "**/models/**/*.ts"
@@ -11,6 +11,10 @@ globs:
 ---
 
 # Domain Invariant Pattern
+
+> **사용 시점**: TDD Refactor 단계에서 참조합니다.
+> Design 단계에서는 비즈니스 규칙을 자연어로 식별(`/tdd:design`의 Business Rules 테이블)하고,
+> 구현 시 이 패턴을 적용하여 헬퍼 함수로 추출합니다.
 
 도메인 불변식을 헬퍼 함수로 추출하여 UI, API, 테스트에서 재사용하는 패턴.
 

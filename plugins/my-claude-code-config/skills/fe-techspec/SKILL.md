@@ -8,7 +8,7 @@ description: |
 
 # FE TechSpec
 
-**관련 스킬:** `domain-invariant-pattern` - 불변식 헬퍼 함수 설계 패턴
+**관련 스킬:** `domain-invariant-pattern` - 구현 시 비즈니스 규칙을 헬퍼 함수로 추출하는 패턴
 
 FE TechSpec은 프로젝트의 기술적 구현 방향을 정의하는 문서. PRD(요구사항)와 Figma(디자인)를 기반으로 Solution, Acceptance Criteria, Test Cases를 도출한다.
 
@@ -109,12 +109,12 @@ SLA/SLO 기준의 시스템 요구사항.
 1. **Domain & Entity**: 핵심 도메인 객체와 속성 정의
    - Entity는 실제 코드의 타입/인터페이스와 1:1 매칭
    - 속성(Property)을 별도 Entity로 분리하지 않음
-2. **Invariant Helpers**: 불변식을 헬퍼 함수로 추출
-   - Given에서 `is*` 함수 추출 (상태 조건)
-   - When에서 `can*` 함수 추출 (가능 조건)
-   - Then에서 `get*`, `should*` 함수 추출 (파생 값, 동작 조건)
-   - `domain-invariant-pattern` 스킬 참조
-3. **Usecase**: 주요 사용 시나리오 테이블 (Input → Output + 관련 헬퍼)
+2. **Business Rules**: 테스트 케이스에서 비즈니스 규칙 식별
+   - Given에서 상태 조건 규칙 식별
+   - When에서 행동 제약 규칙 식별
+   - Then에서 결과 규칙(파생 값, 조건부 동작) 식별
+   - 자연어 기술만, 함수명/시그니처는 구현 시 결정
+3. **Usecase**: 주요 사용 시나리오 테이블 (Input → Output)
 4. **Component & States**: 컴포넌트 계층 + State 설계
 5. **Usecase-Component Integration**: 연결 지점 정의
 
@@ -122,10 +122,10 @@ SLA/SLO 기준의 시스템 요구사항.
 - ✅ `AdGroup` Entity에 `biddingType`, `deliveryType` 속성 포함
 - ❌ `BiddingType`, `DeliveryType`을 별도 Entity로 정의
 
-**Invariant Helper 가이드:**
-- ✅ 여러 곳에서 재사용되는 비즈니스 규칙 → 헬퍼 함수로 추출
-- ❌ 한 번만 사용되는 단순 조건 → 인라인으로 유지
-- 의존성 순서: is* → can*, get* → should*
+**Business Rules 가이드:**
+- ✅ 2곳 이상에서 참조되는 비즈니스 규칙 → 테이블에 기록
+- ❌ 한 번만 사용되는 단순 조건 → 테이블에서 제외
+- 함수명/시그니처는 구현 시 `domain-invariant-pattern` 스킬 참조하여 결정
 
 ### Component & Code - Client
 - Test cases 기반으로 module, entity, usecase 추출
@@ -162,6 +162,6 @@ SLA/SLO 기준의 시스템 요구사항.
 | UI 문구 가정 | Figma 미확인 | variants에서 실제 문구 추출 |
 | FR에 Entity/Command 헤더 | 지침 오해 | Design에서만 사용, FR은 테이블만 |
 | Verification 누락 | 선택사항으로 오인 | Integration Test 필수 |
-| 불변식 누락 | Given/When/Then에서 조건만 보고 헬퍼 미추출 | `domain-invariant-pattern` 스킬 참조 |
-| 헬퍼 함수 중복 | UI/API에서 같은 조건을 각각 구현 | 공통 invariants.ts에 Single Source of Truth |
-| 의존성 순서 오류 | can* 함수가 다른 can* 함수 호출 | Layer 구조 준수 (is* → can* → should*) |
+| 비즈니스 규칙 누락 | Given/When/Then에서 규칙 미식별 | Business Rules 테이블 작성 |
+| 규칙 과다 명세 | Design에서 함수명/시그니처까지 결정 | 자연어 기술만, 구현은 TDD에 위임 |
+| 규칙 중복 구현 | UI/API에서 같은 규칙을 각각 구현 | 구현 시 `domain-invariant-pattern` 스킬 참조 |
