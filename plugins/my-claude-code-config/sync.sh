@@ -17,6 +17,7 @@ PLUGIN_FILES=(
   "commands/tdd/spec.md"
   "commands/tdd/design.md"
   "commands/tdd/issues.md"
+  "commands/tdd/start.md"
   "commands/tdd/implement.md"
   "skills/claude-config-patterns/SKILL.md"
   "skills/code-dojo/SKILL.md"
