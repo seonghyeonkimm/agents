@@ -7,11 +7,12 @@
 
 ## gh 명령어 실행 전 필수 확인
 `gh pr create`, `gh pr view`, `gh api` 등 gh CLI 명령어 실행 전:
-1. `git remote get-url origin`으로 리포 소유자 확인
-2. 소유자가 `seonghyeonkimm`이면 → `seonghyeonkimm` 계정 필요
-3. 그 외 → `roger_karrot` 계정 필요
-4. `gh api user --jq '.login'`으로 현재 활성 계정 확인
-5. 불일치 시 `gh auth switch -u {올바른_계정}` 실행 후 진행
+1. **GITHUB_TOKEN 환경변수 확인 (최우선)**: `echo $GITHUB_TOKEN`으로 설정 여부 확인. 설정되어 있으면 gh CLI는 이 토큰만 사용하고 `gh auth switch`를 무시하므로, 이후 모든 `gh` 명령어 앞에 `unset GITHUB_TOKEN &&`를 붙여 실행
+2. `git remote get-url origin`으로 리포 소유자 확인
+3. 소유자가 `seonghyeonkimm`이면 → `seonghyeonkimm` 계정 필요
+4. 그 외 → `roger_karrot` 계정 필요
+5. `gh api user --jq '.login'`으로 현재 활성 계정 확인 (GITHUB_TOKEN이 있었다면 unset 후 확인)
+6. 불일치 시 `gh auth switch -u {올바른_계정}` 실행 후 진행
 
 ## PR 기본 규칙
 - PR 생성 시 명시적 요청이 없으면 **draft PR**로 생성

@@ -20,15 +20,19 @@ allowed-tools:
 
 ⚠️ gh 명령어 실행 전 반드시 올바른 계정이 활성화되어 있는지 확인한다.
 
-1. `git remote get-url origin`으로 remote URL에서 소유자(org/user)를 파싱
-2. 소유자-계정 매핑:
+1. **GITHUB_TOKEN 환경변수 확인** (최우선):
+   - `echo $GITHUB_TOKEN`으로 설정 여부 확인
+   - GITHUB_TOKEN이 설정되어 있으면 gh CLI는 이 토큰만 사용하고 `gh auth switch`를 무시함
+   - 설정되어 있다면: 이후 모든 `gh` 명령어 앞에 반드시 `unset GITHUB_TOKEN &&`를 붙여 실행
+2. `git remote get-url origin`으로 remote URL에서 소유자(org/user)를 파싱
+3. 소유자-계정 매핑:
    - `seonghyeonkimm/*` → `seonghyeonkimm` 계정
    - 그 외 (`karrot-emu/*` 등) → `roger_karrot` 계정
-3. `gh api user --jq '.login'`으로 현재 활성 계정 확인
-4. 매핑된 계정과 활성 계정이 다르면:
+4. `gh api user --jq '.login'`으로 현재 활성 계정 확인 (GITHUB_TOKEN이 있었다면 unset 후 확인)
+5. 매핑된 계정과 활성 계정이 다르면:
    - `gh auth switch -u {올바른_계정}` 실행
    - 전환 성공 확인 후 다음 단계 진행
-5. 전환 실패 시: 에러 메시지 출력하고 `gh auth login` 안내
+6. 전환 실패 시: 에러 메시지 출력하고 `gh auth login` 안내
 
 ### Step 1: 상태 확인
 1. `git status`로 변경사항 확인
