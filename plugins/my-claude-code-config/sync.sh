@@ -13,12 +13,14 @@ CLAUDE_HOME="${HOME}/.claude"
 
 # Files to sync: plugin components
 PLUGIN_FILES=(
+  "commands/pr.md"
   "commands/wrap.md"
   "commands/tdd/spec.md"
   "commands/tdd/design.md"
   "commands/tdd/issues.md"
   "commands/tdd/start.md"
   "commands/tdd/implement.md"
+  "rules/gh-auth.md"
   "skills/claude-config-patterns/SKILL.md"
   "skills/code-dojo/SKILL.md"
   "skills/domain-invariant-pattern/SKILL.md"
@@ -92,6 +94,7 @@ do_import() {
   # Create directories
   mkdir -p "$CLAUDE_HOME/commands"
   mkdir -p "$CLAUDE_HOME/commands/tdd"
+  mkdir -p "$CLAUDE_HOME/rules"
   mkdir -p "$CLAUDE_HOME/agents"
   mkdir -p "$CLAUDE_HOME/skills/claude-config-patterns"
   mkdir -p "$CLAUDE_HOME/skills/code-dojo"
