@@ -20,7 +20,6 @@ PLUGIN_FILES=(
   "commands/tdd/issues.md"
   "commands/tdd/start.md"
   "commands/tdd/implement.md"
-  "rules/gh-auth.md"
   "skills/claude-config-patterns/SKILL.md"
   "skills/code-dojo/SKILL.md"
   "skills/domain-invariant-pattern/SKILL.md"
@@ -74,6 +73,16 @@ do_export() {
       log_warn "Skip (not found): $src"
     fi
   done
+
+  # Copy any rule .md files
+  if ls "$CLAUDE_HOME/rules/"*.md 1>/dev/null 2>&1; then
+    for rule in "$CLAUDE_HOME/rules/"*.md; do
+      name="$(basename "$rule")"
+      mkdir -p "$SCRIPT_DIR/rules"
+      cp "$rule" "$SCRIPT_DIR/rules/$name"
+      log_ok "rules/$name"
+    done
+  fi
 
   # Copy any agent .md files
   if ls "$CLAUDE_HOME/agents/"*.md 1>/dev/null 2>&1; then
@@ -138,6 +147,19 @@ do_import() {
   chmod +x "$CLAUDE_HOME/hooks/skill-activation-forced-eval.sh" 2>/dev/null || true
   chmod +x "$CLAUDE_HOME/statusline.sh" 2>/dev/null || true
 
+  # Copy rule files
+  if ls "$SCRIPT_DIR/rules/"*.md 1>/dev/null 2>&1; then
+    for rule in "$SCRIPT_DIR/rules/"*.md; do
+      name="$(basename "$rule")"
+      dst="$CLAUDE_HOME/rules/$name"
+      if [ -f "$dst" ]; then
+        cp "$dst" "${dst}.bak"
+      fi
+      cp "$rule" "$dst"
+      log_ok "rules/$name"
+    done
+  fi
+
   # Copy agent files
   if ls "$SCRIPT_DIR/agents/"*.md 1>/dev/null 2>&1; then
     for agent in "$SCRIPT_DIR/agents/"*.md; do
@@ -200,6 +222,35 @@ do_diff() {
       has_diff=true
     else
       log_ok "config/$file: in sync"
+    fi
+  done
+
+  # Rules files (dynamic discovery)
+  local all_rules=()
+  if ls "$CLAUDE_HOME/rules/"*.md 1>/dev/null 2>&1; then
+    for f in "$CLAUDE_HOME/rules/"*.md; do all_rules+=("$(basename "$f")"); done
+  fi
+  if ls "$SCRIPT_DIR/rules/"*.md 1>/dev/null 2>&1; then
+    for f in "$SCRIPT_DIR/rules/"*.md; do all_rules+=("$(basename "$f")"); done
+  fi
+  # Deduplicate
+  mapfile -t all_rules < <(printf '%s\n' "${all_rules[@]}" | sort -u)
+  for name in "${all_rules[@]}"; do
+    local_file="$CLAUDE_HOME/rules/$name"
+    repo_file="$SCRIPT_DIR/rules/$name"
+    if [ ! -f "$local_file" ]; then
+      log_diff "rules/$name: only in repo"
+      has_diff=true
+    elif [ ! -f "$repo_file" ]; then
+      log_diff "rules/$name: only in local"
+      has_diff=true
+    elif ! diff -q "$local_file" "$repo_file" >/dev/null 2>&1; then
+      log_diff "rules/$name: differs"
+      diff --color=auto "$repo_file" "$local_file" 2>/dev/null || true
+      echo ""
+      has_diff=true
+    else
+      log_ok "rules/$name: in sync"
     fi
   done
 
