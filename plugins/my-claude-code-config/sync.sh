@@ -14,6 +14,7 @@ CLAUDE_HOME="${HOME}/.claude"
 # Files to sync: plugin components
 PLUGIN_FILES=(
   "commands/pr.md"
+  "commands/pr-review.md"
   "commands/wrap.md"
   "commands/tdd/spec.md"
   "commands/tdd/design.md"
