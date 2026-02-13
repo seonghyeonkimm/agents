@@ -105,7 +105,7 @@ Linear TechSpec 문서의 **Functional Requirements (Given/When/Then)** 섹션�
 ⚠️ 테스트 케이스에서 비즈니스 규칙을 자연어로 추출. 함수명/시그니처는 구현 시 결정.
 ⚠️ 2곳 이상에서 참조되는 규칙만 기록. 단일 컴포넌트 렌더링 분기는 제외.
 
-| Rule ID | 참조 지점 | 규칙 유형 | 규칙 설명 | TC# |
+| Rule ID | 참조 지점 | 규칙 유형 | 규칙 설명 | # |
 |---------|----------|----------|----------|-----|
 | BR-1 | {ComponentA, ComponentB} | 상태 조건 | {자연어 설명} | #1,#2 |
 | BR-2 | {UI, API request} | 행동 제약 | {자연어 설명} | #3 |
@@ -198,10 +198,24 @@ Input → Output 테이블
 Test cases 기반으로 module, usecase, 컴포넌트 구조 추출
 
 ## Verification
-⚠️ Integration Test 최우선
-- Integration Tests (필수): TC 기반 테스트
-- Unit Tests (필요 시): 복잡한 비즈니스 규칙 로직
-- E2E Tests (필요 시): 전체 플로우만
+
+⚠️ Integration Test 최우선.
+
+### Integration Tests (필수)
+
+⚠️ UI 렌더링 자체("~가 렌더링된다")보다 사용자 행동(클릭, 입력)과 그 결과(핸들러 호출, 상태 변경)를 검증.
+
+| # | 테스트 명 | 검증 내용 |
+|---|----------|----------|
+| 1 | {테스트명} | {검증 내용} |
+
+### Unit Tests (필요 시)
+
+복잡한 파생 상태 로직만 대상.
+
+### E2E Tests (필요 시)
+
+전체 사용자 플로우 검증.
 ```
 
 ### Phase 5: 결과 보고
