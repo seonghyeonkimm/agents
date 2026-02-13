@@ -106,9 +106,10 @@ SLA/SLO 기준의 시스템 요구사항.
 테스트 케이스 기반으로 도메인 설계를 진행.
 
 **작성 순서:**
-1. **Domain & Entity**: 핵심 도메인 객체와 속성 정의
-   - Entity는 실제 코드의 타입/인터페이스와 1:1 매칭
-   - 속성(Property)을 별도 Entity로 분리하지 않음
+1. **데이터 모델**: API 응답 기반 interface 정의
+   - API 응답 모델을 기반으로 interface를 정의하고, 컴포넌트는 이 interface에만 의존
+   - 대부분 API 타입 참조로 충분. 별도 클라이언트 Entity는 정말 필요한 경우에만 추가
+   - 필요한 경우: 여러 API 응답 조합, 클라이언트 고유 상태, API와 다른 구조가 필요한 경우
 2. **Business Rules**: 테스트 케이스에서 비즈니스 규칙 식별
    - Given에서 상태 조건 규칙 식별
    - When에서 행동 제약 규칙 식별
@@ -118,18 +119,23 @@ SLA/SLO 기준의 시스템 요구사항.
 4. **Component & States**: 컴포넌트 계층 + State 설계
 5. **Usecase-Component Integration**: 연결 지점 정의
 
-**Entity 작성 가이드:**
-- ✅ `AdGroup` Entity에 `biddingType`, `deliveryType` 속성 포함
-- ❌ `BiddingType`, `DeliveryType`을 별도 Entity로 정의
+**데이터 모델 가이드:**
+- ✅ API 응답 타입을 기반으로 interface 정의 → 컴포넌트는 interface만 의존
+- ✅ enum/상수값은 `constants/`에 별도 정의 가능
+- ❌ API 응답과 동일한 구조를 클라이언트 Entity로 재정의
+- ⚠️ 별도 클라이언트 Entity가 필요하면 사유를 명시 (예: "여러 API 응답 조합 필요")
 
 **Business Rules 가이드:**
 - ✅ 2곳 이상에서 참조되는 비즈니스 규칙 → 테이블에 기록
 - ❌ 한 번만 사용되는 단순 조건 → 테이블에서 제외
+- ❌ 컴포넌트 렌더링 분기(예: "광고가 0개이면 추천 뷰 노출")는 비즈니스 규칙이 아님 → 해당 컴포넌트의 렌더링 책임
+- "참조 지점" 컬럼으로 어디서 사용되는지 명시 (예: "AdGroupForm, API request")
 - 함수명/시그니처는 구현 시 `domain-invariant-pattern` 스킬 참조하여 결정
 
 ### Component & Code - Client
-- Test cases 기반으로 module, entity, usecase 추출
+- Test cases 기반으로 module, usecase, 컴포넌트 구조 추출
 - 컴포넌트 분해, 파일 구조, Props 인터페이스.
+- interface는 API 타입 기반으로 정의하되, 컴포넌트가 API 모델에 직접 의존하지 않도록 레이어 분리
 
 ### (Optional) Context & Container Diagram / Component & Code - Server
 
@@ -158,7 +164,8 @@ SLA/SLO 기준의 시스템 요구사항.
 | Test Case 누락 | 정상 케이스만 작성 | 에러/엣지 케이스 반드시 포함 |
 | NFR 생략 | 선택사항이라 무시 | 공개 페이지면 SEO/A11y 필수 검토 |
 | Solution에 코드 포함 | "기술적 해결책"으로 오해 | 비기술 요약으로 작성 |
-| Entity 과다 분리 | 속성을 Entity로 오인 | 실제 코드 타입과 1:1 매칭 |
+| 클라이언트 Entity 과잉 설계 | API 응답을 재정의하려 함 | API 타입 기반 interface로 충분. 별도 Entity는 사유 필요 |
+| 렌더링 분기를 규칙으로 추출 | 단일 컴포넌트의 if/else를 비즈니스 규칙으로 오인 | 2곳 이상 참조되는 로직만 Business Rules 테이블에 기록 |
 | UI 문구 가정 | Figma 미확인 | variants에서 실제 문구 추출 |
 | FR에 Entity/Command 헤더 | 지침 오해 | Design에서만 사용, FR은 테이블만 |
 | Verification 누락 | 선택사항으로 오인 | Integration Test 필수 |

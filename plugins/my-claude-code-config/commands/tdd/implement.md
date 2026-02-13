@@ -262,7 +262,7 @@ Linear 문서의 Design 섹션 또는 issue 제목/설명에서 어느 repo에 �
 
 ## 관련 설계
 
-{Linear TechSpec 문서의 Design 섹션에서 해당 Entity/Usecase/Component 정보}
+{Linear TechSpec 문서의 Design 섹션에서 해당 데이터 모델(Interface)/Usecase/Component 정보}
 
 ## 작업 순서
 
@@ -333,7 +333,7 @@ create_comment(issueId: "{issue_id}", body: "🔴 Red Phase 완료 - Draft PR: {
 
 ## 관련 설계
 
-{Linear TechSpec 문서의 Design 섹션에서 해당 Entity/Usecase/Component 정보}
+{Linear TechSpec 문서의 Design 섹션에서 해당 데이터 모델(Interface)/Usecase/Component 정보}
 
 ## 작업 순서
 
@@ -395,7 +395,7 @@ create_comment(issueId: "{issue_id}", body: "🟢 Green Phase 완료 - PR: {pr_u
 
 ## 관련 설계
 
-{Linear TechSpec 문서의 Design 섹션에서 해당 Entity/Usecase/Component 정보}
+{Linear TechSpec 문서의 Design 섹션에서 해당 데이터 모델(Interface)/Usecase/Component 정보}
 
 ## 작업 순서
 
@@ -550,7 +550,7 @@ TechSpec: {document URL}
 
 Draft PR 생성됨:
 - [Frontend] Cart UI Component → PR #{pr_number} (Draft)
-- [Backend] Cart Entity → PR #{pr_number} (Draft)
+- [Backend] Cart Interface → PR #{pr_number} (Draft)
 - [Backend] API Endpoint → PR #{pr_number} (Draft)
 
 다음 단계:
@@ -566,7 +566,7 @@ Batch 1, Phase: Green 완료 🟢
 
 PR 업데이트됨:
 - [Frontend] Cart UI Component → PR #{pr_number} (구현 추가)
-- [Backend] Cart Entity → PR #{pr_number} (구현 추가)
+- [Backend] Cart Interface → PR #{pr_number} (구현 추가)
 - [Backend] API Endpoint → PR #{pr_number} (구현 추가)
 
 다음 단계:
@@ -582,7 +582,7 @@ Batch 1, Phase: Refactor 완료 🔵
 
 PR 최종 업데이트:
 - [Frontend] Cart UI Component → PR #{pr_number}
-- [Backend] Cart Entity → PR #{pr_number}
+- [Backend] Cart Interface → PR #{pr_number}
 - [Backend] API Endpoint → PR #{pr_number}
 
 다음 단계:
@@ -636,7 +636,7 @@ Claude: [AskUserQuestion] 이 feature에 참여할 repo를 선택하세요.
 Claude: [AskUserQuestion] 다음을 실행합니다:
 
   Batch 1, Phase: Red (테스트 작성 + Draft PR 생성)
-  - [Backend] Cart Entity 및 Type 정의
+  - [Backend] Cart Interface 및 상수 정의
   - [Frontend] Cart UI Component
   - [Backend] Cart API 엔드포인트
 
@@ -654,7 +654,7 @@ Claude:
   Base Branch: feature/new-cart
 
   워크스페이스:
-  - [Backend] Cart Entity 및 Type 정의 [Red] → session 시작됨
+  - [Backend] Cart Interface 및 상수 정의 [Red] → session 시작됨
   - [Frontend] Cart UI Component [Red] → session 시작됨
   - [Backend] Cart API 엔드포인트 [Red] → session 시작됨
 
@@ -676,7 +676,7 @@ Claude: 자동 감지: 다음은 Batch 1, Phase: Green
 Claude: [AskUserQuestion] 다음을 실행합니다:
 
   Batch 1, Phase: Green (구현 → 같은 PR에 push)
-  - [Backend] Cart Entity 및 Type 정의 → PR #42
+  - [Backend] Cart Interface 및 상수 정의 → PR #42
   - [Frontend] Cart UI Component → PR #43
   - [Backend] Cart API 엔드포인트 → PR #44
 
@@ -700,7 +700,7 @@ Claude: current_step: batch=1, phase=refactor (completed)
 Claude: 자동 감지: 다음은 Batch 2, Phase: Red
 
 Claude: [AskUserQuestion] Batch 1 완료! PR을 Ready for Review로 전환하시겠습니까?
-  - PR #42: Cart Entity 및 Type 정의
+  - PR #42: Cart Interface 및 상수 정의
   - PR #43: Cart UI Component
   - PR #44: Cart API 엔드포인트
 

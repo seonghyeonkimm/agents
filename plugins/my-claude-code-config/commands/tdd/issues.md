@@ -43,7 +43,7 @@ allowed-tools:
 |------|------|----------|
 | `## Functional Requirements` | `/tdd:spec` | 필수 |
 | `## Design` | `/tdd:design` | 필수 |
-| `### 1. Domain & Entity` | `/tdd:design` | 필수 |
+| `### 1. 데이터 모델` | `/tdd:design` | 필수 |
 | `### 2. Business Rules` | `/tdd:design` | 필수 |
 | `### 3. Usecase` | `/tdd:design` | 필수 |
 | `## Component & Code - Client` | `/tdd:design` | 필수 |
@@ -65,18 +65,18 @@ allowed-tools:
 
 | 유형 | 기준 | 예시 |
 |------|------|------|
-| **Blocker** | 다른 작업의 선행 조건. 이것 없이 진행 불가 | API 설계, 공통 컴포넌트, Entity 정의, 인프라 셋업 |
+| **Blocker** | 다른 작업의 선행 조건. 이것 없이 진행 불가 | API 설계, 공통 컴포넌트, 공통 interface/상수 정의, 인프라 셋업 |
 | **Related** | 독립적으로 진행 가능. Blocker 완료 후 병렬 작업 | 개별 페이지 구현, 개별 Usecase 구현, 테스트 작성 |
 
 **추출 소스 (Linear TechSpec 문서에서):**
 
 - **Functional Requirements** → Acceptance Criteria 항목별 issue, Given/When/Then 테스트 케이스 그룹
-- **Design** → Entity 정의, Usecase 구현, Component 구현, State 설계
+- **Design** → 데이터 모델(interface) 정의, Usecase 구현, Component 구현, State 설계
 
 **Issue 구조화 패턴:**
 
 ```
-[Blocker] 공통 Entity/Type 정의
+[Blocker] 공통 Interface/상수 정의
 [Blocker] API 인터페이스 설계
 [Blocker] 공통 컴포넌트 구현 ({shared components})
   └── [Sub] {SharedComponent1}
@@ -286,12 +286,12 @@ Claude: .claude/docs/my-feature/ 에서 메타데이터를 로드합니다...
 
 Claude: Linear에서 TechSpec 문서를 조회합니다...
   → Functional Requirements (12개 테스트 케이스)
-  → Design (entities: Cart, CartItem / usecases: 4개 / components: 8개)
+  → Design (데이터 참조: Cart API, Product API / usecases: 4개 / components: 8개)
 
 Claude: [AskUserQuestion] 다음 issue 구조로 생성합니다:
 
   Blocker Issues:
-  1. [Blocker] Cart Entity 및 Type 정의
+  1. [Blocker] Cart Interface 및 상수 정의
   2. [Blocker] Cart API 인터페이스 설계
   3. [Blocker] 공통 컴포넌트 (QuantitySelector, Button)
 
@@ -309,7 +309,7 @@ Claude: Linear에 issue를 생성합니다...
 Claude: Issue 생성 완료!
 
   Blocker Issues (3개):
-  - [Blocker] Cart Entity 및 Type 정의 (https://linear.com/issue/PROJ-1)
+  - [Blocker] Cart Interface 및 상수 정의 (https://linear.com/issue/PROJ-1)
   - [Blocker] Cart API 인터페이스 설계 (https://linear.com/issue/PROJ-2)
   - [Blocker] 공통 컴포넌트 (QuantitySelector, Button) (https://linear.com/issue/PROJ-3)
 
