@@ -49,3 +49,14 @@ model: haiku|sonnet|opus
 
 ### Skill 디렉토리
 frontmatter(name, description)가 포함된 `SKILL.md`가 필수. 보조 자료를 위한 `assets/`와 `references/` 하위 디렉토리 포함 가능.
+
+## 개발 가이드라인
+
+### sync.sh 연동 필수
+
+`plugins/` 하위의 파일을 추가·수정·삭제할 때는 반드시 `sync.sh`의 동작에 영향이 없는지 확인합니다.
+
+- **파일 추가/수정/삭제**: sync.sh는 commands, skills, rules, agents, hooks를 auto-discover하므로 대부분 자동 처리됨
+- **새로운 파일 카테고리 도입**: sync.sh에 해당 카테고리의 discover/sync 로직 추가 필요
+- **디렉토리 구조 변경**: sync.sh의 경로 매핑 확인 필요
+- **변경 후 검증**: `./plugins/my-claude-code-config/sync.sh diff`로 동기화 상태 확인
