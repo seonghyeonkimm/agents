@@ -8,7 +8,7 @@ description: |
 
 # FE TechSpec
 
-**관련 스킬:** `domain-invariant-pattern` - 구현 시 비즈니스 규칙을 헬퍼 함수로 추출하는 패턴
+**관련 스킬:** `entity-object-pattern` - 구현 시 비즈니스 규칙을 Entity Object로 그룹화하는 패턴
 
 FE TechSpec은 프로젝트의 기술적 구현 방향을 정의하는 문서. PRD(요구사항)와 Figma(디자인)를 기반으로 Solution, Acceptance Criteria, Test Cases를 도출한다.
 
@@ -130,7 +130,7 @@ SLA/SLO 기준의 시스템 요구사항.
 - ❌ 한 번만 사용되는 단순 조건 → 테이블에서 제외
 - ❌ 컴포넌트 렌더링 분기(예: "광고가 0개이면 추천 뷰 노출")는 비즈니스 규칙이 아님 → 해당 컴포넌트의 렌더링 책임
 - "참조 지점" 컬럼으로 어디서 사용되는지 명시 (예: "AdGroupForm, API request")
-- 함수명/시그니처는 구현 시 `domain-invariant-pattern` 스킬 참조하여 결정
+- 함수명/시그니처는 구현 시 `entity-object-pattern` 스킬 참조하여 결정
 
 ### Component & Code - Client
 - Test cases 기반으로 module, usecase, 컴포넌트 구조 추출
@@ -171,4 +171,4 @@ SLA/SLO 기준의 시스템 요구사항.
 | Verification 누락 | 선택사항으로 오인 | Integration Test 필수 |
 | 비즈니스 규칙 누락 | Given/When/Then에서 규칙 미식별 | Business Rules 테이블 작성 |
 | 규칙 과다 명세 | Design에서 함수명/시그니처까지 결정 | 자연어 기술만, 구현은 TDD에 위임 |
-| 규칙 중복 구현 | UI/API에서 같은 규칙을 각각 구현 | 구현 시 `domain-invariant-pattern` 스킬 참조 |
+| 규칙 중복 구현 | UI/API에서 같은 규칙을 각각 구현 | 구현 시 `entity-object-pattern` 스킬 참조 |

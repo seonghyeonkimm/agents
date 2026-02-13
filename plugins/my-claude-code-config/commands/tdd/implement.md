@@ -278,6 +278,8 @@ Linear issue description의 "작업 대상" 섹션에서 패키지 정보를 추
 
 1. `{base_branch}`에서 `{branch_name}` 브랜치 생성
 2. Given/When/Then 테스트 케이스를 실제 테스트 코드로 변환
+   - ⚠️ `describe`/`it`/`test` 설명은 **한국어**로 작성
+   - 예: `describe('PostAdListItem')`, `it('광고가 0개일 때 RecommendCreateAd를 렌더링한다')`
 3. 테스트 실행 → **실패 확인** (Red 상태)
 4. 커밋 & 푸시
 5. Draft PR 생성:
@@ -427,7 +429,7 @@ create_comment(issueId: "{issue_id}", body: "🟢 Green Phase 완료 - PR: {pr_u
 
 1. `{branch_name}` 브랜치 checkout
 2. 코드 품질 개선 (중복 제거, 네이밍, 구조 개선)
-3. Business Rules에 해당하는 반복 로직은 `domain-invariant-pattern` 스킬을 참조하여 헬퍼 함수로 추출
+3. Business Rules에 해당하는 반복 로직은 `entity-object-pattern` 스킬을 참조하여 Entity Object로 그룹화
 4. 테스트 실행 → **여전히 성공** 확인
 5. Pre-commit 체크:
    ```bash
