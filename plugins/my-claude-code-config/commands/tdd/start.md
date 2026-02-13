@@ -207,6 +207,8 @@ updated_at: "2026-02-11T10:00:00Z"
    - stash 선택 시 `git stash push -m "tdd-start: before {task}"`
 
 1. Phase 2에서 설계한 테스트 케이스를 실제 테스트 코드로 변환
+   - ⚠️ `describe`/`it`/`test` 설명은 **한국어**로 작성
+   - 예: `describe('CartPage')`, `it('장바구니가 비어있으면 빈 상태 메시지를 표시한다')`
 2. 프로젝트 컨벤션에 맞는 테스트 파일 생성/수정
 3. 테스트 실행 → **실패 확인**
    - ⚠️ import 에러나 syntax 에러가 아닌 **assertion 실패**여야 함
