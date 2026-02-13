@@ -167,6 +167,23 @@ Linear issue description의 "작업 대상" 섹션에서 패키지 정보를 추
 3. 정보가 없으면 TechSpec Design 섹션의 "Component & Code" 파일 구조에서 직접 추출
 4. 명확하지 않으면 AskUserQuestion으로 확인
 
+### Phase 3.5: 현재 Batch의 Base Branch 결정
+
+현재 batch에 따라 workspace session과 PR의 base branch를 결정한다:
+
+**Batch 1 (첫 배치)**:
+- `base_branch` = implement.yaml의 `vibe_kanban.base_branch` (프로젝트 base branch)
+
+**Batch 2+ (이전 배치 존재)**:
+1. 이전 batch의 모든 issue가 `phases.refactor.status === "completed"` 확인
+2. 이전 batch issue들의 `branch` 필드를 수집
+3. 이전 batch에 issue가 **1개**면: 해당 issue의 branch를 base로 사용
+4. 이전 batch에 issue가 **여러 개**면: 프로젝트 base branch를 사용 (이전 batch PR들이 이미 merge되었어야 함)
+5. ⚠️ 이전 batch PR이 아직 merge되지 않았으면: AskUserQuestion으로 사용자에게 확인
+   - "이전 batch PR이 아직 merge되지 않았습니다. 어떤 branch를 base로 사용할까요?"
+
+결정된 base branch를 이후 모든 workspace session과 task description에 사용.
+
 ### Phase 4: Task 생성 및 Session 시작
 
 현재 batch + phase에 따라 task를 생성하고 workspace session을 시작한다.
@@ -247,10 +264,11 @@ Linear issue description의 "작업 대상" 섹션에서 패키지 정보를 추
 ### Red Task Description
 
 ````
-⚠️ **즉시 작업 시작**: 이 task는 TDD 워크플로우에서 설계가 완료된 상태입니다.
-- `EnterPlanMode`를 사용하지 마세요
-- `/plan` 스킬을 실행하지 마세요
-- 아래 "작업 순서"를 바로 실행하세요
+🚫 **금지 사항 — 아래 규칙을 반드시 준수하세요:**
+- `Skill` 도구를 호출하지 마세요 (어떤 스킬이든 — `/tdd:start`, `/plan`, `/commit` 등 모두 금지)
+- `EnterPlanMode` 도구를 호출하지 마세요
+- PR 생성 시 `--base` 플래그를 반드시 아래 Context의 **Base Branch** 값으로 지정하세요. `main`을 base로 사용하지 마세요.
+- 이 workspace는 자동 실행 환경입니다. 아래 "작업 순서"를 1번부터 순서대로 즉시 실행하세요.
 
 ## Phase: RED - 실패하는 테스트 작성
 
@@ -279,7 +297,10 @@ Linear issue description의 "작업 대상" 섹션에서 패키지 정보를 추
 1. `{base_branch}`에서 `{branch_name}` 브랜치 생성
 2. Given/When/Then 테스트 케이스를 실제 테스트 코드로 변환
    - ⚠️ `describe`/`it`/`test` 설명은 **한국어**로 작성
-   - 예: `describe('PostAdListItem')`, `it('광고가 0개일 때 RecommendCreateAd를 렌더링한다')`
+   - ⚠️ TC#, TC1 등 번호 접두사를 붙이지 않음 — 설명만 작성
+   - ⚠️ UI 렌더링 자체를 검증하는 테스트는 지양. **사용자 행동**(클릭, 입력 등)과 그 **결과**(핸들러 호출, 상태 변경, 다른 컴포넌트 노출)를 검증하는 통합 테스트 위주로 작성
+   - ❌ `it('RecommendCreateAd를 렌더링한다')` → ✅ `it('광고가 없을 때 클릭하면 onCreateAd가 호출된다')`
+   - 예: `describe('PostAdListItem')`, `it('광고가 0개일 때 광고 생성 유도 영역을 클릭하면 onCreateAd가 호출된다')`
 3. 테스트 실행 → **실패 확인** (Red 상태)
 4. 커밋 & 푸시
 5. Draft PR 생성:
@@ -302,7 +323,7 @@ Linear issue description의 "작업 대상" 섹션에서 패키지 정보를 추
    )"
    ```
 
-   ⚠️ **중요**: `--base {base_branch}` 플래그 필수!
+   ⚠️ **중요**: `--base {base_branch}` 플래그 필수! `main`을 base로 사용하면 안 됩니다!
 
 ## 완료 조건
 
@@ -331,10 +352,10 @@ create_comment(issueId: "{issue_id}", body: "🔴 Red Phase 완료 - Draft PR: {
 ### Green Task Description
 
 ````
-⚠️ **즉시 작업 시작**: 이 task는 TDD 워크플로우에서 설계가 완료된 상태입니다.
-- `EnterPlanMode`를 사용하지 마세요
-- `/plan` 스킬을 실행하지 마세요
-- 아래 "작업 순서"를 바로 실행하세요
+🚫 **금지 사항 — 아래 규칙을 반드시 준수하세요:**
+- `Skill` 도구를 호출하지 마세요 (어떤 스킬이든 — `/tdd:start`, `/plan`, `/commit` 등 모두 금지)
+- `EnterPlanMode` 도구를 호출하지 마세요
+- 이 workspace는 자동 실행 환경입니다. 아래 "작업 순서"를 1번부터 순서대로 즉시 실행하세요.
 
 ## Phase: GREEN - 테스트 통과시키기
 
@@ -402,10 +423,10 @@ create_comment(issueId: "{issue_id}", body: "🟢 Green Phase 완료 - PR: {pr_u
 ### Refactor Task Description
 
 ````
-⚠️ **즉시 작업 시작**: 이 task는 TDD 워크플로우에서 설계가 완료된 상태입니다.
-- `EnterPlanMode`를 사용하지 마세요
-- `/plan` 스킬을 실행하지 마세요
-- 아래 "작업 순서"를 바로 실행하세요
+🚫 **금지 사항 — 아래 규칙을 반드시 준수하세요:**
+- `Skill` 도구를 호출하지 마세요 (어떤 스킬이든 — `/tdd:start`, `/plan`, `/commit` 등 모두 금지)
+- `EnterPlanMode` 도구를 호출하지 마세요
+- 이 workspace는 자동 실행 환경입니다. 아래 "작업 순서"를 1번부터 순서대로 즉시 실행하세요.
 
 ## Phase: REFACTOR - 리팩토링
 
