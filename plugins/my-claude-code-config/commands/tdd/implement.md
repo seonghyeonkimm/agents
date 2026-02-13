@@ -1,6 +1,6 @@
 ---
 name: tdd/implement
-description: spec/design/issues 기반으로 Phase-based (Red→Green→Refactor) 병렬 워크스페이스를 생성. PR을 중심으로 각 phase별 인간 리뷰를 거침
+description: spec/design/issues 기반으로 단일 Task 내에서 Red→Green→Refactor를 순차 실행. 각 phase 완료 후 인간 리뷰를 거침
 allowed-tools:
   - Read
   - Write
@@ -12,11 +12,12 @@ allowed-tools:
 
 # TDD Implement Command
 
-`/tdd:spec`, `/tdd:design`, `/tdd:issues`의 결과물을 기반으로 병렬 구현을 시작한다.
+`/tdd:spec`, `/tdd:design`, `/tdd:issues`의 결과물을 기반으로 구현을 시작한다.
 
-**핵심 원칙: PR 중심 Phase-based Human-in-the-Loop**
+**핵심 원칙: 단일 Task, 순차 Phase, Human-in-the-Loop**
 
-각 워크스페이스는 Red-Green-Refactor 중 **한 phase만** 실행하고, 인간이 PR에서 리뷰한 뒤 다음 phase를 진행한다.
+각 issue당 하나의 vk task를 생성하고, Red→Green→Refactor를 순차적으로 실행한다.
+각 phase 완료 후 인간이 PR에서 리뷰한 뒤 다음 phase를 진행한다.
 
 ```
 Red    → Draft PR 생성 (테스트만)       → Human: PR에서 테스트 리뷰
@@ -184,9 +185,11 @@ Linear issue description의 "작업 대상" 섹션에서 패키지 정보를 추
 
 결정된 base branch를 이후 모든 workspace session과 task description에 사용.
 
-### Phase 4: Task 생성 및 Session 시작
+### Phase 4: Task 생성/업데이트 및 Session 시작
 
-현재 batch + phase에 따라 task를 생성하고 workspace session을 시작한다.
+현재 batch + phase에 따라 task를 생성(Red) 또는 업데이트(Green/Refactor)하고 workspace session을 시작한다.
+
+**핵심: 각 issue당 하나의 vk task. Red에서 생성하고 Green/Refactor에서 재사용.**
 
 **Phase에 따른 분기:**
 
@@ -194,14 +197,15 @@ Linear issue description의 "작업 대상" 섹션에서 패키지 정보를 추
 
 각 issue에 대해:
 
-1. **Task 생성**:
+1. **Task 생성** (최초 1회):
    ```
-   mcp__vibe_kanban__create_task(
+   mcp__vibe_kanban__create_issue(
      project_id: "{project_id}",
      title: "{issue title} [Red]",
      description: "{아래 Red Task Description}"
    )
    ```
+   → `issue_id`를 implement.yaml의 `task_id`에 저장
 
 2. **Workspace Session 시작**:
    ```
@@ -214,18 +218,18 @@ Linear issue description의 "작업 대상" 섹션에서 패키지 정보를 추
 
 #### Green Phase인 경우
 
-각 issue에 대해 (implement.yaml에서 branch, pr_number 참조):
+각 issue에 대해 (implement.yaml에서 task_id, branch, pr_number 참조):
 
-1. **Task 생성**:
+1. **기존 Task 업데이트**:
    ```
-   mcp__vibe_kanban__create_task(
-     project_id: "{project_id}",
+   mcp__vibe_kanban__update_issue(
+     issue_id: "{task_id}",
      title: "{issue title} [Green]",
      description: "{아래 Green Task Description}"
    )
    ```
 
-2. **Workspace Session 시작**:
+2. **Workspace Session 시작** (같은 task에서 새 session):
    ```
    mcp__vibe_kanban__start_workspace_session(
      task_id: "{task_id}",
@@ -237,18 +241,18 @@ Linear issue description의 "작업 대상" 섹션에서 패키지 정보를 추
 
 #### Refactor Phase인 경우
 
-각 issue에 대해 (implement.yaml에서 branch, pr_number 참조):
+각 issue에 대해 (implement.yaml에서 task_id, branch, pr_number 참조):
 
-1. **Task 생성**:
+1. **기존 Task 업데이트**:
    ```
-   mcp__vibe_kanban__create_task(
-     project_id: "{project_id}",
+   mcp__vibe_kanban__update_issue(
+     issue_id: "{task_id}",
      title: "{issue title} [Refactor]",
      description: "{아래 Refactor Task Description}"
    )
    ```
 
-2. **Workspace Session 시작**:
+2. **Workspace Session 시작** (같은 task에서 새 session):
    ```
    mcp__vibe_kanban__start_workspace_session(
      task_id: "{task_id}",
@@ -547,18 +551,16 @@ batches:
         package_path: "{package-path}"          # Phase 3에서 추출
         target_directory: "{target-dir}"        # Phase 3에서 추출
         reference_pattern: "{ref-path}"         # Phase 3에서 추출
+        task_id: "{vibe-task-id}"  # Red에서 생성, 전 phase에서 재사용
         branch: "{issue-branch}"   # Red에서 생성, Green/Refactor에서 재사용
         pr_url: "{github-pr-url}"  # Red에서 생성, 이후 자동 업데이트
         pr_number: 42
         phases:
           red:
-            task_id: "{vibe-task-id}"
             status: "completed"    # "todo" | "inprogress" | "completed" | "failed"
           green:
-            task_id: "{vibe-task-id}"
             status: "inprogress"
           refactor:
-            task_id: null
             status: "todo"
   - batch: 2
     type: related
@@ -571,27 +573,25 @@ batches:
         package_path: "{package-path}"
         target_directory: "{target-dir}"
         reference_pattern: "{ref-path}"
+        task_id: null              # Red phase에서 생성됨
         branch: null               # Red phase 전이므로 아직 없음
         pr_url: null
         pr_number: null
         phases:
           red:
-            task_id: null
             status: "todo"
           green:
-            task_id: null
             status: "todo"
           refactor:
-            task_id: null
             status: "todo"
 created_at: "{ISO-8601}"
 ```
 
 **상태 저장 시점별 업데이트:**
 
-- **Red 완료 후**: `current_step.phase` → `"green"`, `issues[].branch` 기록, `issues[].pr_url`/`pr_number` 기록, `phases.red.status` → `"completed"`
-- **Green 완료 후**: `current_step.phase` → `"refactor"`, `phases.green.status` → `"completed"`
-- **Refactor 완료 후**: 다음 batch 있으면 `current_step` → `{batch+1, phase: "red"}`, 없으면 `phase` → `"done"`
+- **Red 완료 후**: `current_step.phase` → `"green"`, `issues[].task_id` 기록, `issues[].branch` 기록, `issues[].pr_url`/`pr_number` 기록, `phases.red.status` → `"completed"`
+- **Green 완료 후**: `current_step.phase` → `"refactor"`, `phases.green.status` → `"completed"` (task_id 변경 없음)
+- **Refactor 완료 후**: 다음 batch 있으면 `current_step` → `{batch+1, phase: "red"}`, 없으면 `phase` → `"done"` (task_id 변경 없음)
 
 ### Phase 7: 결과 보고
 
@@ -699,7 +699,7 @@ Claude: [AskUserQuestion] 다음을 실행합니다:
 
 사용자: 진행
 
-Claude: Vibe Kanban에 task 생성 중... (3개 [Red] tasks)
+Claude: Vibe Kanban에 task 생성 중... (3개 tasks)
 Claude: Workspace session 시작 중...
 
 Claude:
@@ -711,9 +711,9 @@ Claude:
   Base Branch: feature/new-cart
 
   워크스페이스:
-  - [Backend] Cart Interface 및 상수 정의 [Red] → session 시작됨
-  - [Frontend] Cart UI Component [Red] → session 시작됨
-  - [Backend] Cart API 엔드포인트 [Red] → session 시작됨
+  - [Backend] Cart Interface 및 상수 정의 [Red] → task 생성 + session 시작됨
+  - [Frontend] Cart UI Component [Red] → task 생성 + session 시작됨
+  - [Backend] Cart API 엔드포인트 [Red] → task 생성 + session 시작됨
 
   다음 단계:
   1. Conductor에서 각 워크스페이스 진행 상황을 모니터링하세요
@@ -739,7 +739,7 @@ Claude: [AskUserQuestion] 다음을 실행합니다:
 
 사용자: 진행
 
-Claude: Vibe Kanban에 task 생성 중... (3개 [Green] tasks)
+Claude: 기존 task 업데이트 중... (3개 tasks → [Green])
 Claude: Workspace session 시작 중... (각 issue branch에서 이어서 작업)
 
 Claude:
@@ -772,7 +772,7 @@ Claude: [AskUserQuestion] Batch 1 완료! PR을 Ready for Review로 전환하시
 Claude: PR을 Ready for Review로 전환합니다...
   gh pr ready 42 && gh pr ready 43 && gh pr ready 44
 
-Claude: Vibe Kanban에 task 생성 중... (2개 [Red] tasks)
+Claude: Vibe Kanban에 task 생성 중... (2개 tasks)
 ...
 ```
 
@@ -790,6 +790,7 @@ Claude: Batch 1, Phase: Green 강제 실행
 
 ## 참고
 
+- **단일 Task 모델**: 각 issue당 하나의 vk task를 생성 (Red). Green/Refactor에서는 `update_issue`로 같은 task를 재사용
 - implement.yaml의 `current_step`으로 다음 실행할 (batch, phase)를 자동 감지
 - `/tdd:implement`를 반복 실행하면 Red → Green → Refactor → 다음 Batch Red → ... 순서로 진행
 - `--phase` 파라미터로 자동 감지를 무시하고 특정 phase 강제 실행 가능
