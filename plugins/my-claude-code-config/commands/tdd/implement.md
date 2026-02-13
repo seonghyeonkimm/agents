@@ -1,6 +1,6 @@
 ---
 name: tdd/implement
-description: spec/design/issues 기반으로 단일 Task 내에서 Red→Green→Refactor를 순차 실행. 각 phase 완료 후 인간 리뷰를 거침
+description: spec/design/issues 기반으로 단일 Task에 Red→Green→Refactor 전체 워크플로우를 포함하여 생성. Workspace가 자체적으로 phase를 순차 실행하며, 각 phase 사이에 인간 리뷰를 거침
 allowed-tools:
   - Read
   - Write
@@ -14,22 +14,25 @@ allowed-tools:
 
 `/tdd:spec`, `/tdd:design`, `/tdd:issues`의 결과물을 기반으로 구현을 시작한다.
 
-**핵심 원칙: 단일 Task, 순차 Phase, Human-in-the-Loop**
+**핵심 원칙: 단일 Task 생성 후 Workspace가 자율 실행, Phase 사이 Human Review**
 
-각 issue당 하나의 vk task를 생성하고, Red→Green→Refactor를 순차적으로 실행한다.
-각 phase 완료 후 인간이 PR에서 리뷰한 뒤 다음 phase를 진행한다.
+각 issue당 하나의 vk task를 생성한다. Task description에 Red→Green→Refactor 전체 워크플로우와 Review Gate를 포함한다. Workspace agent가 이를 순차적으로 실행하며, 각 phase 완료 시 AskUserQuestion으로 인간 리뷰를 받는다.
 
 ```
-Red    → Draft PR 생성 (테스트만)       → Human: PR에서 테스트 리뷰
-Green  → 같은 PR에 구현 push            → Human: PR에서 구현 리뷰
-Refactor → 같은 PR에 리팩토링 push      → Human: PR에서 최종 리뷰
+Workspace 내부 흐름:
+Red    → Draft PR 생성 (테스트만)       → 🔍 Review Gate 1: 인간 리뷰
+Green  → 같은 PR에 구현 push            → 🔍 Review Gate 2: 인간 리뷰
+Refactor → 같은 PR에 리팩토링 push      → 🔍 Review Gate 3: 최종 리뷰
 최종 승인 → Draft PR → Ready for Review (open)
 ```
+
+implement command는 task를 생성하고 session을 시작하는 역할만 한다.
+재실행 시에는 vk issue 상태를 확인하여 다음 batch 진행 여부를 결정한다.
 
 ## Usage
 
 ```
-/tdd:implement [--base <branch>] [--phase <red|green|refactor>]
+/tdd:implement [--base <branch>]
 ```
 
 ### Parameters
@@ -37,22 +40,15 @@ Refactor → 같은 PR에 리팩토링 push      → Human: PR에서 최종 리�
 | Parameter | Description | Example |
 |-----------|-------------|---------|
 | `--base <branch>` | PR의 target branch를 직접 지정. implement.yaml 설정을 override함 | `--base feature/new-cart` |
-| `--phase <phase>` | 현재 batch에서 특정 phase를 강제 지정. 자동 감지를 override함 | `--phase green` |
 
 ### Examples
 
 ```bash
-# 기본 실행 (자동으로 다음 phase 감지)
+# 기본 실행 (첫 실행이면 Batch 1 task 생성, 재실행이면 상태 확인)
 /tdd:implement
 
 # base branch 직접 지정
 /tdd:implement --base feature/checkout
-
-# 특정 phase 강제 실행 (재시도, 건너뛰기 용)
-/tdd:implement --phase green
-
-# 조합 사용
-/tdd:implement --base develop --phase refactor
 ```
 
 ## Prerequisites
@@ -64,25 +60,26 @@ Refactor → 같은 PR에 리팩토링 push      → Human: PR에서 최종 리�
 
 ## Execution Flow
 
-### Phase 1: 메타데이터 로드 및 자동 감지
+### Phase 1: 메타데이터 로드 및 상태 확인
 
-1. **파라미터 파싱**: `--base <branch>`, `--phase <phase>` 파라미터 저장
+1. **파라미터 파싱**: `--base <branch>` 파라미터 저장
 
 2. `.claude/docs/{project-name}/implement.yaml` 존재 여부 확인:
-   - 파일이 없으면 → 첫 실행: `batch=1, phase=red`
-   - 파일이 있으면 → **자동 감지 로직** 실행:
+   - 파일이 없으면 → 첫 실행: Phase 2로 진행
+   - 파일이 있으면 → **vk issue 상태 조회**:
 
    ```
-   current_step 읽기:
-     phase=red   & 모든 issues completed → 다음은 green
-     phase=green & 모든 issues completed → 다음은 refactor
-     phase=refactor & 모든 issues completed →
-       다음 batch 있으면 → batch+1, phase=red
-       마지막 batch → "done" (모든 구현 완료)
-     일부 issues failed → 해당 phase 재시도 제안
+   현재 batch의 모든 task_id에 대해:
+     ToolSearch(query: "select:mcp__vibe_kanban__get_issue")
+     get_issue(issue_id: "{task_id}")
+     → status 확인
+
+   모든 task completed → 다음 batch 있으면 batch+1로 진행, 없으면 "done"
+   일부 task 미완료 → 진행 상황 보고:
+     - 각 task의 현재 상태 표시
+     - "진행 중인 워크스페이스를 완료시켜주세요" 안내
    ```
 
-   - `--phase` 파라미터가 있으면 자동 감지 무시하고 지정된 phase 실행
    - `--base` 파라미터가 있으면 implement.yaml의 base_branch override
 
 3. `.claude/docs/{project-name}/meta.yaml`에서 project.id를 추출한다
@@ -108,11 +105,11 @@ Batch 1 (병렬): [Blocker A] [Blocker B] [Blocker C]
 Batch 2 (병렬): [Related D] [Related E] [Related F]
 ```
 
-7. AskUserQuestion으로 실행할 배치와 phase를 확인:
+7. AskUserQuestion으로 실행할 배치를 확인:
    ```
    question: "다음을 실행합니다. 진행할까요?"
 
-   Batch 1, Phase: Red (테스트 작성 + Draft PR 생성)
+   Batch 1 (Red→Green→Refactor, 각 phase 후 리뷰)
    - {issue title} → workspace session
    - {issue title} → workspace session
    ```
@@ -176,36 +173,31 @@ Linear issue description의 "작업 대상" 섹션에서 패키지 정보를 추
 - `base_branch` = implement.yaml의 `vibe_kanban.base_branch` (프로젝트 base branch)
 
 **Batch 2+ (이전 배치 존재)**:
-1. 이전 batch의 모든 issue가 `phases.refactor.status === "completed"` 확인
-2. 이전 batch issue들의 `branch` 필드를 수집
+1. 이전 batch의 task_id들로 vk issue를 조회하여 관련 PR 정보 파악
+2. 또는 `gh pr list` 등으로 GitHub에서 직접 branch 정보 조회
 3. 이전 batch에 issue가 **1개**면: 해당 issue의 branch를 base로 사용
 4. 이전 batch에 issue가 **여러 개**면: 프로젝트 base branch를 사용 (이전 batch PR들이 이미 merge되었어야 함)
-5. ⚠️ 이전 batch PR이 아직 merge되지 않았으면: AskUserQuestion으로 사용자에게 확인
-   - "이전 batch PR이 아직 merge되지 않았습니다. 어떤 branch를 base로 사용할까요?"
+5. ⚠️ 판단이 어려우면: AskUserQuestion으로 사용자에게 base branch 확인
 
 결정된 base branch를 이후 모든 workspace session과 task description에 사용.
 
-### Phase 4: Task 생성/업데이트 및 Session 시작
+### Phase 4: Task 생성 및 Session 시작
 
-현재 batch + phase에 따라 task를 생성(Red) 또는 업데이트(Green/Refactor)하고 workspace session을 시작한다.
+현재 batch의 각 issue에 대해 vk task를 생성하고 workspace session을 시작한다.
 
-**핵심: 각 issue당 하나의 vk task. Red에서 생성하고 Green/Refactor에서 재사용.**
-
-**Phase에 따른 분기:**
-
-#### Red Phase인 경우
+**핵심: task를 한번 생성하면 update하지 않는다. Workspace agent가 Red→Green→Refactor를 자체 처리.**
 
 각 issue에 대해:
 
-1. **Task 생성** (최초 1회):
+1. **Task 생성** (배치당 1회):
    ```
    mcp__vibe_kanban__create_issue(
      project_id: "{project_id}",
-     title: "{issue title} [Red]",
-     description: "{아래 Red Task Description}"
+     title: "{issue title}",
+     description: "{아래 통합 Task Description}"
    )
    ```
-   → `issue_id`를 implement.yaml의 `task_id`에 저장
+   → `task_id`를 implement.yaml에 저장
 
 2. **Workspace Session 시작**:
    ```
@@ -216,68 +208,18 @@ Linear issue description의 "작업 대상" 섹션에서 패키지 정보를 추
    )
    ```
 
-#### Green Phase인 경우
-
-각 issue에 대해 (implement.yaml에서 task_id, branch, pr_number 참조):
-
-1. **기존 Task 업데이트**:
-   ```
-   mcp__vibe_kanban__update_issue(
-     issue_id: "{task_id}",
-     title: "{issue title} [Green]",
-     description: "{아래 Green Task Description}"
-   )
-   ```
-
-2. **Workspace Session 시작** (같은 task에서 새 session):
-   ```
-   mcp__vibe_kanban__start_workspace_session(
-     task_id: "{task_id}",
-     executor: "CLAUDE_CODE",
-     repos: [{ repo_id: "{task의-repo-id}", base_branch: "{issue.branch}" }]
-   )
-   ```
-   > Note: `base_branch`에 Red에서 생성한 **issue branch**를 사용하여 이어서 작업
-
-#### Refactor Phase인 경우
-
-각 issue에 대해 (implement.yaml에서 task_id, branch, pr_number 참조):
-
-1. **기존 Task 업데이트**:
-   ```
-   mcp__vibe_kanban__update_issue(
-     issue_id: "{task_id}",
-     title: "{issue title} [Refactor]",
-     description: "{아래 Refactor Task Description}"
-   )
-   ```
-
-2. **Workspace Session 시작** (같은 task에서 새 session):
-   ```
-   mcp__vibe_kanban__start_workspace_session(
-     task_id: "{task_id}",
-     executor: "CLAUDE_CODE",
-     repos: [{ repo_id: "{task의-repo-id}", base_branch: "{issue.branch}" }]
-   )
-   ```
-
 ---
 
-## Phase별 Task Description 템플릿
+## 통합 Task Description 템플릿
 
-### Red Task Description
+하나의 task에 Red→Green→Refactor 전체 워크플로우를 포함한다. 각 Step 완료 후 Review Gate에서 AskUserQuestion으로 인간 리뷰를 받고, 승인 후 다음 Step으로 진행한다.
 
 ````
 🚫 **금지 사항 — 아래 규칙을 반드시 준수하세요:**
 - `Skill` 도구를 호출하지 마세요 (어떤 스킬이든 — `/tdd:start`, `/plan`, `/commit` 등 모두 금지)
 - `EnterPlanMode` 도구를 호출하지 마세요
 - PR 생성 시 `--base` 플래그를 반드시 아래 Context의 **Base Branch** 값으로 지정하세요. `main`을 base로 사용하지 마세요.
-- 이 workspace는 자동 실행 환경입니다. 아래 "작업 순서"를 1번부터 순서대로 즉시 실행하세요.
-
-## Phase: RED - 실패하는 테스트 작성
-
-이 워크스페이스의 목표는 **테스트만** 작성하고 **Draft PR을 생성**하는 것입니다.
-구현 코드를 작성하지 마세요.
+- 아래 Step 1부터 순서대로 실행하세요. 각 Step 완료 후 Review Gate에서 반드시 멈추고 인간의 리뷰를 받으세요.
 
 ## Context
 
@@ -287,6 +229,7 @@ Linear issue description의 "작업 대상" 섹션에서 패키지 정보를 추
 - **작업 대상 패키지**: `{package_name}` (`{package_path}`)
 - **작업 디렉토리**: `{package_path}/{target_directory}`
 - **기존 패턴 참조**: `{package_path}/{reference_pattern}` (같은 패키지 내 유사 모듈)
+- **Linear Issue ID**: `{issue_id}` (Linear 동기화용)
 
 ## 관련 테스트 케이스
 
@@ -296,9 +239,16 @@ Linear issue description의 "작업 대상" 섹션에서 패키지 정보를 추
 
 {Linear TechSpec 문서의 Design 섹션에서 해당 데이터 모델(Interface)/Usecase/Component 정보}
 
-## 작업 순서
+---
 
-1. `{base_branch}`에서 `{branch_name}` 브랜치 생성
+## Step 1: 🔴 RED — 실패하는 테스트 작성
+
+이 Step의 목표는 **테스트만** 작성하고 **Draft PR을 생성**하는 것입니다.
+구현 코드를 작성하지 마세요.
+
+### 작업 순서
+
+1. `{base_branch}`에서 브랜치 생성 (이름 규칙: issue title 기반 kebab-case)
 2. Given/When/Then 테스트 케이스를 실제 테스트 코드로 변환
    - ⚠️ `describe`/`it`/`test` 설명은 **한국어**로 작성
    - ⚠️ TC#, TC1 등 번호 접두사를 붙이지 않음 — 설명만 작성
@@ -312,86 +262,80 @@ Linear issue description의 "작업 대상" 섹션에서 패키지 정보를 추
    gh pr create --draft --base {base_branch} \
      --title "[Red] {issue title}" \
      --body "$(cat <<'EOF'
-   ## 🔴 Red Phase - 실패하는 테스트
-
-   이 PR은 TDD Red phase의 결과물입니다.
-   실패하는 테스트 코드만 포함되어 있습니다.
+   ## TDD Progress
+   - [x] 🔴 Red: 실패하는 테스트 작성
+   - [ ] 🟢 Green: 최소 구현
+   - [ ] 🔵 Refactor: 코드 개선
 
    ### 리뷰 포인트
    - [ ] 테스트 케이스가 요구사항을 정확히 반영하는가?
    - [ ] Given/When/Then 구조가 명확한가?
    - [ ] 테스트 범위가 충분한가?
-
-   > 리뷰 완료 후 Green phase에서 구현이 진행됩니다.
    EOF
    )"
    ```
 
    ⚠️ **중요**: `--base {base_branch}` 플래그 필수! `main`을 base로 사용하면 안 됩니다!
 
-## 완료 조건
+### Linear 동기화
 
-- [ ] 테스트 파일이 존재함
-- [ ] 테스트 실행 시 실패함 (구현이 없으므로)
-- [ ] `{branch_name}` 브랜치에 push됨
-- [ ] Draft PR 생성됨
-
-## Linear 동기화 (필수)
-
-**Linear Issue ID**: `{issue_id}`
-
-### 작업 시작 시
 ```
 ToolSearch(query: "select:mcp__plugin_linear_linear__update_issue")
 update_issue(id: "{issue_id}", state: "started")
-```
 
-### PR 생성 후
-```
 ToolSearch(query: "select:mcp__plugin_linear_linear__create_comment")
 create_comment(issueId: "{issue_id}", body: "🔴 Red Phase 완료 - Draft PR: {pr_url}")
 ```
-````
 
-### Green Task Description
+### 완료 조건
 
-````
-🚫 **금지 사항 — 아래 규칙을 반드시 준수하세요:**
-- `Skill` 도구를 호출하지 마세요 (어떤 스킬이든 — `/tdd:start`, `/plan`, `/commit` 등 모두 금지)
-- `EnterPlanMode` 도구를 호출하지 마세요
-- 이 workspace는 자동 실행 환경입니다. 아래 "작업 순서"를 1번부터 순서대로 즉시 실행하세요.
+- [ ] 테스트 파일이 존재함
+- [ ] 테스트 실행 시 실패함 (구현이 없으므로)
+- [ ] 브랜치에 push됨
+- [ ] Draft PR 생성됨
 
-## Phase: GREEN - 테스트 통과시키기
+### 🔍 Review Gate 1
 
-이 워크스페이스의 목표는 기존 테스트를 통과시키는 **최소한의 코드**를 작성하는 것입니다.
+**반드시 여기서 멈추고 AskUserQuestion으로 인간에게 리뷰를 요청하세요.**
+
+```
+AskUserQuestion:
+  question: "🔴 Red Phase 완료. Draft PR을 생성했습니다.
+
+  PR: {pr_url}
+  테스트 파일: {파일 경로 목록}
+  실패하는 테스트: {N}개
+
+  PR에서 테스트 코드를 리뷰해주세요.
+  선택: 진행 (Green으로) / 수정 요청 / 중단"
+```
+
+- **수정 요청** 시 → 피드백에 따라 테스트 수정 → 커밋 & 푸시 → 다시 Review Gate 1
+- **진행** 시 → Step 2로
+- **중단** 시 → 작업 중지 (현재 상태 유지)
+
+---
+
+## Step 2: 🟢 GREEN — 테스트 통과시키기
+
+이 Step의 목표는 기존 테스트를 통과시키는 **최소한의 코드**를 작성하는 것입니다.
 과도한 추상화나 리팩토링을 하지 마세요.
 
-## Context
+### 작업 순서
 
-- Linear Issue: {linear_issue_url}
-- TechSpec Document: {meta.yaml의 document.url}
-- **Branch**: `{branch_name}` (Red 단계에서 생성됨)
-- **PR**: {pr_url} (이미 존재하는 Draft PR)
-- **작업 대상 패키지**: `{package_name}` (`{package_path}`)
-- **작업 디렉토리**: `{package_path}/{target_directory}`
-- **기존 패턴 참조**: `{package_path}/{reference_pattern}` (같은 패키지 내 유사 모듈)
-
-## 관련 설계
-
-{Linear TechSpec 문서의 Design 섹션에서 해당 데이터 모델(Interface)/Usecase/Component 정보}
-
-## 작업 순서
-
-1. `{branch_name}` 브랜치 checkout
-2. 기존 테스트 코드 확인
-3. 테스트를 통과시키는 **최소한의** 코드 작성
-4. 테스트 실행 → **성공 확인** (Green 상태)
-5. 커밋 & 푸시 (같은 branch → PR 자동 업데이트)
-6. PR title 업데이트:
+1. 기존 테스트 코드 확인
+2. 테스트를 통과시키는 **최소한의** 코드 작성
+   - 조기 최적화 금지
+   - 테스트에 없는 케이스 처리 금지
+   - 리팩토링이나 코드 정리 금지
+   - 필요 이상의 추상화 금지
+3. 테스트 실행 → **성공 확인** (Green 상태)
+4. 커밋 & 푸시 (같은 branch → PR 자동 업데이트)
+5. PR title 업데이트:
    ```bash
    gh pr edit {pr_number} --title "[Green] {issue title}"
    ```
-7. PR에 코멘트:
+6. PR에 코멘트:
    ```bash
    gh pr comment {pr_number} --body "$(cat <<'EOF'
    ## 🟢 Green Phase 완료
@@ -402,61 +346,56 @@ create_comment(issueId: "{issue_id}", body: "🔴 Red Phase 완료 - Draft PR: {
    - [ ] 구현이 테스트 요구사항을 올바르게 충족하는가?
    - [ ] 불필요한 코드가 포함되지 않았는가?
    - [ ] 로직이 합리적인가?
-
-   > 리뷰 완료 후 Refactor phase에서 코드 품질이 개선됩니다.
    EOF
    )"
    ```
 
-## 완료 조건
-
-- [ ] 모든 테스트 통과
-- [ ] 최소한의 구현만 포함 (no gold plating)
-- [ ] `{branch_name}` 브랜치에 push됨 (PR 자동 업데이트)
-
-## Linear 동기화 (필수)
-
-**Linear Issue ID**: `{issue_id}`
+### Linear 동기화
 
 ```
 ToolSearch(query: "select:mcp__plugin_linear_linear__create_comment")
 create_comment(issueId: "{issue_id}", body: "🟢 Green Phase 완료 - PR: {pr_url}")
 ```
-````
 
-### Refactor Task Description
+### 완료 조건
 
-````
-🚫 **금지 사항 — 아래 규칙을 반드시 준수하세요:**
-- `Skill` 도구를 호출하지 마세요 (어떤 스킬이든 — `/tdd:start`, `/plan`, `/commit` 등 모두 금지)
-- `EnterPlanMode` 도구를 호출하지 마세요
-- 이 workspace는 자동 실행 환경입니다. 아래 "작업 순서"를 1번부터 순서대로 즉시 실행하세요.
+- [ ] 모든 테스트 통과
+- [ ] 최소한의 구현만 포함 (no gold plating)
+- [ ] 브랜치에 push됨 (PR 자동 업데이트)
 
-## Phase: REFACTOR - 리팩토링
+### 🔍 Review Gate 2
 
-이 워크스페이스의 목표는 코드 품질을 개선하는 것입니다.
+**반드시 여기서 멈추고 AskUserQuestion으로 인간에게 리뷰를 요청하세요.**
 
-## Context
+```
+AskUserQuestion:
+  question: "🟢 Green Phase 완료. PR이 업데이트되었습니다.
 
-- Linear Issue: {linear_issue_url}
-- TechSpec Document: {meta.yaml의 document.url}
-- **Branch**: `{branch_name}`
-- **PR**: {pr_url} (이미 존재하는 Draft PR)
-- **작업 대상 패키지**: `{package_name}` (`{package_path}`)
-- **작업 디렉토리**: `{package_path}/{target_directory}`
-- **기존 패턴 참조**: `{package_path}/{reference_pattern}` (같은 패키지 내 유사 모듈)
+  PR: {pr_url}
+  변경 파일:
+  - {file} - {변경 요약}
 
-## 관련 설계
+  모든 테스트 통과.
+  선택: 진행 (Refactor로) / 수정 요청 / Refactor 건너뛰기 / 중단"
+```
 
-{Linear TechSpec 문서의 Design 섹션에서 해당 데이터 모델(Interface)/Usecase/Component 정보}
+- **수정 요청** 시 → 피드백에 따라 구현 수정 → 테스트 재실행 → 커밋 & 푸시 → 다시 Review Gate 2
+- **진행** 시 → Step 3로
+- **Refactor 건너뛰기** 시 → Step 3의 마무리만 실행 (PR title prefix 제거, Linear 상태 업데이트, `gh pr ready`)
+- **중단** 시 → 작업 중지
 
-## 작업 순서
+---
 
-1. `{branch_name}` 브랜치 checkout
-2. 코드 품질 개선 (중복 제거, 네이밍, 구조 개선)
-3. Business Rules에 해당하는 반복 로직은 `entity-object-pattern` 스킬을 참조하여 Entity Object로 그룹화
-4. 테스트 실행 → **여전히 성공** 확인
-5. Pre-commit 체크:
+## Step 3: 🔵 REFACTOR — 리팩토링
+
+이 Step의 목표는 코드 품질을 개선하는 것입니다.
+
+### 작업 순서
+
+1. 코드 품질 개선 (중복 제거, 네이밍, 구조 개선)
+2. Business Rules에 해당하는 반복 로직은 `entity-object-pattern` 스킬을 참조하여 Entity Object로 그룹화
+3. 테스트 실행 → **여전히 성공** 확인
+4. Pre-commit 체크:
    ```bash
    # 1. Type check
    npx tsc --noEmit
@@ -468,12 +407,12 @@ create_comment(issueId: "{issue_id}", body: "🟢 Green Phase 완료 - PR: {pr_u
    npx vitest run
    ```
    실패 시 수정 후 재실행. 모두 통과해야 commit 가능.
-6. 커밋 & 푸시 (같은 branch → PR 자동 업데이트)
-7. PR title 업데이트 (phase prefix 제거):
+5. 커밋 & 푸시 (같은 branch → PR 자동 업데이트)
+6. PR title 업데이트 (phase prefix 제거):
    ```bash
    gh pr edit {pr_number} --title "{issue title}"
    ```
-8. PR에 코멘트:
+7. PR에 코멘트:
    ```bash
    gh pr comment {pr_number} --body "$(cat <<'EOF'
    ## 🔵 Refactor Phase 완료
@@ -484,21 +423,11 @@ create_comment(issueId: "{issue_id}", body: "🟢 Green Phase 완료 - PR: {pr_u
    - [ ] 코드 구조와 네이밍이 적절한가?
    - [ ] 중복이 제거되었는가?
    - [ ] 전체적인 코드 품질이 만족스러운가?
-
-   > 리뷰 승인 후 `gh pr ready`로 PR을 open하세요.
    EOF
    )"
    ```
 
-## 완료 조건
-
-- [ ] 모든 테스트 통과
-- [ ] tsc, biome 통과
-- [ ] `{branch_name}` 브랜치에 push됨 (PR 자동 업데이트)
-
-## Linear 동기화 (필수)
-
-**Linear Issue ID**: `{issue_id}`
+### Linear 동기화
 
 ```
 ToolSearch(query: "select:mcp__plugin_linear_linear__update_issue")
@@ -511,11 +440,36 @@ create_comment(issueId: "{issue_id}", body: "🔵 Refactor 완료 - 최종 리�
 ```
 
 > Note: "Done" 상태는 PR이 merge된 후 별도로 처리됩니다.
+
+### 완료 조건
+
+- [ ] 모든 테스트 통과
+- [ ] tsc, biome 통과
+- [ ] 브랜치에 push됨 (PR 자동 업데이트)
+
+### 🔍 Review Gate 3
+
+**반드시 여기서 멈추고 AskUserQuestion으로 인간에게 최종 리뷰를 요청하세요.**
+
+```
+AskUserQuestion:
+  question: "🔵 Refactor Phase 완료. PR이 최종 업데이트되었습니다.
+
+  PR: {pr_url}
+  tsc: ✅ 통과
+  biome: ✅ 통과
+  테스트: ✅ 전체 통과
+
+  선택: 승인 (PR을 Ready for Review로 전환) / 수정 요청"
+```
+
+- **수정 요청** 시 → 피드백에 따라 수정 → 체크 재실행 → 커밋 & 푸시 → 다시 Review Gate 3
+- **승인** 시 → `gh pr ready {pr_number}` 실행 → 작업 완료
 ````
 
 ---
 
-### Phase 6: 실행 상태 저장
+### Phase 5: 실행 상태 저장
 
 `.claude/docs/{project-name}/implement.yaml`에 실행 상태를 저장한다:
 
@@ -532,13 +486,10 @@ vibe_kanban:
   repos:
     - id: "{frontend-repo-id}"
       name: "frontend"
-      base_branch: "{selected_base_branch}"
     - id: "{backend-repo-id}"
       name: "backend"
-      base_branch: "{selected_base_branch}"
-current_step:                    # 현재 진행 위치 (자동 감지에 사용)
-  batch: 1
-  phase: "red"                   # "red" | "green" | "refactor" | "done"
+current_step:
+  batch: 1                       # 현재 batch 번호만 추적
 batches:
   - batch: 1
     type: blocker
@@ -551,17 +502,7 @@ batches:
         package_path: "{package-path}"          # Phase 3에서 추출
         target_directory: "{target-dir}"        # Phase 3에서 추출
         reference_pattern: "{ref-path}"         # Phase 3에서 추출
-        task_id: "{vibe-task-id}"  # Red에서 생성, 전 phase에서 재사용
-        branch: "{issue-branch}"   # Red에서 생성, Green/Refactor에서 재사용
-        pr_url: "{github-pr-url}"  # Red에서 생성, 이후 자동 업데이트
-        pr_number: 42
-        phases:
-          red:
-            status: "completed"    # "todo" | "inprogress" | "completed" | "failed"
-          green:
-            status: "inprogress"
-          refactor:
-            status: "todo"
+        task_id: "{vibe-task-id}"  # Task 생성 시 기록, 상태 조회에 사용
   - batch: 2
     type: related
     issues:
@@ -573,88 +514,61 @@ batches:
         package_path: "{package-path}"
         target_directory: "{target-dir}"
         reference_pattern: "{ref-path}"
-        task_id: null              # Red phase에서 생성됨
-        branch: null               # Red phase 전이므로 아직 없음
-        pr_url: null
-        pr_number: null
-        phases:
-          red:
-            status: "todo"
-          green:
-            status: "todo"
-          refactor:
-            status: "todo"
+        task_id: null              # 다음 batch 실행 시 생성됨
 created_at: "{ISO-8601}"
 ```
 
-**상태 저장 시점별 업데이트:**
+**상태 저장 시점:**
 
-- **Red 완료 후**: `current_step.phase` → `"green"`, `issues[].task_id` 기록, `issues[].branch` 기록, `issues[].pr_url`/`pr_number` 기록, `phases.red.status` → `"completed"`
-- **Green 완료 후**: `current_step.phase` → `"refactor"`, `phases.green.status` → `"completed"` (task_id 변경 없음)
-- **Refactor 완료 후**: 다음 batch 있으면 `current_step` → `{batch+1, phase: "red"}`, 없으면 `phase` → `"done"` (task_id 변경 없음)
+- **Task 생성 후**: `issues[].task_id` 기록, `current_step.batch` 업데이트
+- **Batch 완료 확인 후** (재실행 시): `current_step.batch` → 다음 batch 번호로 업데이트
 
-### Phase 7: 결과 보고
+> Phase별 상태(Red/Green/Refactor)는 workspace가 내부적으로 관리하므로 implement.yaml에서 추적하지 않는다.
+> Branch, PR 정보도 workspace가 관리하므로 저장하지 않는다.
 
-Phase별로 다른 결과 보고:
+### Phase 6: 결과 보고
 
-#### Red 완료 시
+#### Batch 시작 시
 
 ```
-Batch 1, Phase: Red 완료 🔴
+Batch 1 시작
 
 Project: {Project Name}
 TechSpec: {document URL}
 
-Draft PR 생성됨:
-- [Frontend] Cart UI Component → PR #{pr_number} (Draft)
-- [Backend] Cart Interface → PR #{pr_number} (Draft)
-- [Backend] API Endpoint → PR #{pr_number} (Draft)
+워크스페이스 생성됨:
+- [Frontend] Cart UI Component → task 생성 + session 시작
+- [Backend] Cart Interface → task 생성 + session 시작
+
+각 워크스페이스가 Red→Green→Refactor를 순차 처리합니다.
+각 Phase 사이에 Review Gate에서 리뷰 요청이 옵니다.
+```
+
+#### 재실행 시 (상태 확인)
+
+```
+Batch 1 상태 확인
+
+vk issue 상태:
+- [Frontend] Cart UI Component → ✅ completed
+- [Backend] Cart Interface → ⏳ in_progress
 
 다음 단계:
-1. 각 Draft PR에서 테스트 코드를 리뷰하세요
-2. 리뷰 완료 후 /tdd:implement 를 실행하면 Green phase가 시작됩니다
-   (또는 /tdd:implement --phase green)
+- 진행 중인 워크스페이스의 Review Gate에 응답해주세요
+- 모든 task 완료 후 /tdd:implement 로 Batch 2를 시작합니다
 ```
 
-#### Green 완료 시
+#### Batch 전환 시
 
 ```
-Batch 1, Phase: Green 완료 🟢
+Batch 1 모든 task 완료!
 
-PR 업데이트됨:
-- [Frontend] Cart UI Component → PR #{pr_number} (구현 추가)
-- [Backend] Cart Interface → PR #{pr_number} (구현 추가)
-- [Backend] API Endpoint → PR #{pr_number} (구현 추가)
+다음: Batch 2 (Related issues)
+- [Frontend] Wishlist 저장 기능
+- [Backend] Cart 미니 뷰
 
-다음 단계:
-1. 각 PR에서 구현 코드를 리뷰하세요
-2. 리뷰 완료 후 /tdd:implement 를 실행하면 Refactor phase가 시작됩니다
-   (또는 /tdd:implement --phase refactor)
+진행할까요?
 ```
-
-#### Refactor 완료 시
-
-```
-Batch 1, Phase: Refactor 완료 🔵
-
-PR 최종 업데이트:
-- [Frontend] Cart UI Component → PR #{pr_number}
-- [Backend] Cart Interface → PR #{pr_number}
-- [Backend] API Endpoint → PR #{pr_number}
-
-다음 단계:
-1. 각 PR에서 최종 코드를 리뷰하세요
-2. 승인되면 PR을 Ready for Review로 전환하세요:
-   gh pr ready {pr_number_1} && gh pr ready {pr_number_2} && gh pr ready {pr_number_3}
-3. Batch 2가 있으면 /tdd:implement 로 계속 진행합니다
-```
-
-### Phase 8: (Human) Review
-
-사용자가 각 PR의 diff를 리뷰한다.
-- Red: 테스트 코드의 정확성과 범위 확인
-- Green: 구현의 합리성과 최소성 확인
-- Refactor: 코드 품질과 구조 확인, 승인 시 `gh pr ready`로 PR open
 
 ## Error Handling
 
@@ -666,11 +580,10 @@ PR 최종 업데이트:
 | Vibe Kanban 프로젝트 없음 | AskUserQuestion으로 프로젝트 선택 또는 생성 안내 |
 | Repo 정보 없음 | AskUserQuestion으로 repo 선택 요청 |
 | Session 시작 실패 | 에러 로그 출력, 수동 재시도 안내 |
-| 이전 phase가 failed | 재시도 여부 AskUserQuestion으로 확인 |
-| PR이 닫혀있음 | 에러 로그 + PR 재생성 안내 |
+| vk issue 상태 조회 실패 | 에러 로그 + 수동 확인 안내 |
 | 모든 구현 완료 (done) | "모든 배치가 완료되었습니다" 안내 |
 
-## Example: 첫 실행 → Red Phase
+## Example: 첫 실행 → Batch 1 task 생성
 
 ```
 사용자: /tdd:implement
@@ -692,18 +605,18 @@ Claude: [AskUserQuestion] 이 feature에 참여할 repo를 선택하세요.
 
 Claude: [AskUserQuestion] 다음을 실행합니다:
 
-  Batch 1, Phase: Red (테스트 작성 + Draft PR 생성)
+  Batch 1 (Red→Green→Refactor, 각 phase 후 리뷰)
   - [Backend] Cart Interface 및 상수 정의
   - [Frontend] Cart UI Component
   - [Backend] Cart API 엔드포인트
 
 사용자: 진행
 
-Claude: Vibe Kanban에 task 생성 중... (3개 tasks)
+Claude: Vibe Kanban에 task 생성 중... (3개 tasks, 전체 TDD 워크플로우 포함)
 Claude: Workspace session 시작 중...
 
 Claude:
-  Batch 1, Phase: Red 시작 🔴
+  Batch 1 시작
 
   Project: my-feature
   TechSpec: https://linear.app/daangn/document/fe-techspec-xxx
@@ -711,89 +624,53 @@ Claude:
   Base Branch: feature/new-cart
 
   워크스페이스:
-  - [Backend] Cart Interface 및 상수 정의 [Red] → task 생성 + session 시작됨
-  - [Frontend] Cart UI Component [Red] → task 생성 + session 시작됨
-  - [Backend] Cart API 엔드포인트 [Red] → task 생성 + session 시작됨
+  - [Backend] Cart Interface 및 상수 정의 → task 생성 + session 시작
+  - [Frontend] Cart UI Component → task 생성 + session 시작
+  - [Backend] Cart API 엔드포인트 → task 생성 + session 시작
 
-  다음 단계:
-  1. Conductor에서 각 워크스페이스 진행 상황을 모니터링하세요
-  2. 각 Draft PR에서 테스트 코드를 리뷰하세요
-  3. 리뷰 완료 후 /tdd:implement 를 실행하면 Green phase가 시작됩니다
+  각 워크스페이스가 Red→Green→Refactor를 순차 처리합니다.
+  각 Phase 완료 시 Review Gate에서 리뷰 요청이 옵니다.
 ```
 
-## Example: Red 완료 후 → Green Phase (자동 감지)
+## Example: 재실행 → 상태 확인 → Batch 2 시작
 
 ```
 사용자: /tdd:implement
 
 Claude: .claude/docs/my-feature/implement.yaml 을 발견했습니다.
-Claude: current_step: batch=1, phase=red (completed)
-Claude: 자동 감지: 다음은 Batch 1, Phase: Green
+Claude: Batch 1 상태 확인 중...
+  vk issue 상태 조회:
+  - Cart Interface 및 상수 정의 → completed ✅
+  - Cart UI Component → completed ✅
+  - Cart API 엔드포인트 → completed ✅
 
-Claude: [AskUserQuestion] 다음을 실행합니다:
+Claude: Batch 1 모든 task 완료!
 
-  Batch 1, Phase: Green (구현 → 같은 PR에 push)
-  - [Backend] Cart Interface 및 상수 정의 → PR #42
-  - [Frontend] Cart UI Component → PR #43
-  - [Backend] Cart API 엔드포인트 → PR #44
+Claude: [AskUserQuestion] Batch 2를 시작할까요?
 
-사용자: 진행
-
-Claude: 기존 task 업데이트 중... (3개 tasks → [Green])
-Claude: Workspace session 시작 중... (각 issue branch에서 이어서 작업)
-
-Claude:
-  Batch 1, Phase: Green 시작 🟢
-  ...
-```
-
-## Example: Refactor 완료 → Batch 전환
-
-```
-사용자: /tdd:implement
-
-Claude: .claude/docs/my-feature/implement.yaml 을 발견했습니다.
-Claude: current_step: batch=1, phase=refactor (completed)
-Claude: 자동 감지: 다음은 Batch 2, Phase: Red
-
-Claude: [AskUserQuestion] Batch 1 완료! PR을 Ready for Review로 전환하시겠습니까?
-  - PR #42: Cart Interface 및 상수 정의
-  - PR #43: Cart UI Component
-  - PR #44: Cart API 엔드포인트
-
-  그리고 Batch 2를 시작합니다:
-
-  Batch 2, Phase: Red (테스트 작성 + Draft PR 생성)
+  Batch 2 (Red→Green→Refactor, 각 phase 후 리뷰)
   - [Frontend] Wishlist 저장 기능
   - [Backend] Cart 미니 뷰
 
-사용자: PR open하고 Batch 2 진행
-
-Claude: PR을 Ready for Review로 전환합니다...
-  gh pr ready 42 && gh pr ready 43 && gh pr ready 44
+사용자: 진행
 
 Claude: Vibe Kanban에 task 생성 중... (2개 tasks)
-...
-```
+Claude: Workspace session 시작 중...
 
-## Example: --phase 파라미터로 강제 실행
+Claude:
+  Batch 2 시작
 
-```
-사용자: /tdd:implement --phase green
-
-Claude: .claude/docs/my-feature/implement.yaml 을 발견했습니다.
-Claude: --phase 파라미터 감지: green (자동 감지 무시)
-Claude: Batch 1, Phase: Green 강제 실행
-
-...
+  워크스페이스:
+  - [Frontend] Wishlist 저장 기능 → task 생성 + session 시작
+  - [Backend] Cart 미니 뷰 → task 생성 + session 시작
 ```
 
 ## 참고
 
-- **단일 Task 모델**: 각 issue당 하나의 vk task를 생성 (Red). Green/Refactor에서는 `update_issue`로 같은 task를 재사용
-- implement.yaml의 `current_step`으로 다음 실행할 (batch, phase)를 자동 감지
-- `/tdd:implement`를 반복 실행하면 Red → Green → Refactor → 다음 Batch Red → ... 순서로 진행
-- `--phase` 파라미터로 자동 감지를 무시하고 특정 phase 강제 실행 가능
+- **단일 Task, 전체 워크플로우**: 각 issue당 하나의 vk task를 생성하며, Red→Green→Refactor 전체 지시사항을 포함
+- **Workspace 자율 실행**: workspace agent가 phase를 자체 관리하고, phase 사이에 AskUserQuestion Review Gate로 인간 리뷰
+- **vk update_issue 없음**: vk task는 한번 생성 후 변경하지 않음 (Linear issue 상태 동기화는 workspace가 별도 처리)
+- **상태 확인 기반 진행**: `/tdd:implement` 재실행 시 vk issue 상태를 확인하여 batch 진행 여부 결정
 - `--base` 파라미터로 implement.yaml의 base_branch를 override 가능
 - 하나의 PR이 3개 phase를 관통: Red에서 Draft PR 생성, Green/Refactor에서 같은 branch에 push하여 자동 업데이트
 - PR title이 phase별로 업데이트됨: `[Red] title` → `[Green] title` → `title`
