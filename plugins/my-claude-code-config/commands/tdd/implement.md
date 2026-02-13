@@ -158,12 +158,14 @@ Batch 2 (병렬): [Related D] [Related E] [Related F]
    [ ] Backend API (repo-2-id)
    ```
 
-### Phase 3: Issue별 Repo 매핑
+### Phase 3: Issue별 Repo & Package 매핑
 
-Linear 문서의 Design 섹션 또는 issue 제목/설명에서 어느 repo에 해당하는 작업인지 파악:
+Linear issue description의 "작업 대상" 섹션에서 패키지 정보를 추출한다:
 
-- Issue 설명 또는 Design 섹션의 Component/Server 부분 참조
-- 명확하지 않으면 AskUserQuestion으로 확인
+1. **Repo 매핑**: Issue 설명의 패키지 경로로 repo 식별
+2. **Package 정보 추출**: Linear issue의 "작업 대상" 섹션에서 `package_name`, `package_path`, `target_directory`, `reference_pattern` 추출
+3. 정보가 없으면 TechSpec Design 섹션의 "Component & Code" 파일 구조에서 직접 추출
+4. 명확하지 않으면 AskUserQuestion으로 확인
 
 ### Phase 4: Task 생성 및 Session 시작
 
@@ -245,6 +247,11 @@ Linear 문서의 Design 섹션 또는 issue 제목/설명에서 어느 repo에 �
 ### Red Task Description
 
 ````
+⚠️ **즉시 작업 시작**: 이 task는 TDD 워크플로우에서 설계가 완료된 상태입니다.
+- `EnterPlanMode`를 사용하지 마세요
+- `/plan` 스킬을 실행하지 마세요
+- 아래 "작업 순서"를 바로 실행하세요
+
 ## Phase: RED - 실패하는 테스트 작성
 
 이 워크스페이스의 목표는 **테스트만** 작성하고 **Draft PR을 생성**하는 것입니다.
@@ -255,6 +262,9 @@ Linear 문서의 Design 섹션 또는 issue 제목/설명에서 어느 repo에 �
 - Linear Issue: {linear_issue_url}
 - TechSpec Document: {meta.yaml의 document.url}
 - **Base Branch**: `{base_branch}`
+- **작업 대상 패키지**: `{package_name}` (`{package_path}`)
+- **작업 디렉토리**: `{package_path}/{target_directory}`
+- **기존 패턴 참조**: `{package_path}/{reference_pattern}` (같은 패키지 내 유사 모듈)
 
 ## 관련 테스트 케이스
 
@@ -319,6 +329,11 @@ create_comment(issueId: "{issue_id}", body: "🔴 Red Phase 완료 - Draft PR: {
 ### Green Task Description
 
 ````
+⚠️ **즉시 작업 시작**: 이 task는 TDD 워크플로우에서 설계가 완료된 상태입니다.
+- `EnterPlanMode`를 사용하지 마세요
+- `/plan` 스킬을 실행하지 마세요
+- 아래 "작업 순서"를 바로 실행하세요
+
 ## Phase: GREEN - 테스트 통과시키기
 
 이 워크스페이스의 목표는 기존 테스트를 통과시키는 **최소한의 코드**를 작성하는 것입니다.
@@ -330,6 +345,9 @@ create_comment(issueId: "{issue_id}", body: "🔴 Red Phase 완료 - Draft PR: {
 - TechSpec Document: {meta.yaml의 document.url}
 - **Branch**: `{branch_name}` (Red 단계에서 생성됨)
 - **PR**: {pr_url} (이미 존재하는 Draft PR)
+- **작업 대상 패키지**: `{package_name}` (`{package_path}`)
+- **작업 디렉토리**: `{package_path}/{target_directory}`
+- **기존 패턴 참조**: `{package_path}/{reference_pattern}` (같은 패키지 내 유사 모듈)
 
 ## 관련 설계
 
@@ -382,6 +400,11 @@ create_comment(issueId: "{issue_id}", body: "🟢 Green Phase 완료 - PR: {pr_u
 ### Refactor Task Description
 
 ````
+⚠️ **즉시 작업 시작**: 이 task는 TDD 워크플로우에서 설계가 완료된 상태입니다.
+- `EnterPlanMode`를 사용하지 마세요
+- `/plan` 스킬을 실행하지 마세요
+- 아래 "작업 순서"를 바로 실행하세요
+
 ## Phase: REFACTOR - 리팩토링
 
 이 워크스페이스의 목표는 코드 품질을 개선하는 것입니다.
@@ -392,6 +415,9 @@ create_comment(issueId: "{issue_id}", body: "🟢 Green Phase 완료 - PR: {pr_u
 - TechSpec Document: {meta.yaml의 document.url}
 - **Branch**: `{branch_name}`
 - **PR**: {pr_url} (이미 존재하는 Draft PR)
+- **작업 대상 패키지**: `{package_name}` (`{package_path}`)
+- **작업 디렉토리**: `{package_path}/{target_directory}`
+- **기존 패턴 참조**: `{package_path}/{reference_pattern}` (같은 패키지 내 유사 모듈)
 
 ## 관련 설계
 
@@ -494,6 +520,10 @@ batches:
         issue_url: "{linear-issue-url}"
         repo_id: "{frontend-repo-id}"
         title: "{title}"
+        package_name: "{package-name}"          # Phase 3에서 추출
+        package_path: "{package-path}"          # Phase 3에서 추출
+        target_directory: "{target-dir}"        # Phase 3에서 추출
+        reference_pattern: "{ref-path}"         # Phase 3에서 추출
         branch: "{issue-branch}"   # Red에서 생성, Green/Refactor에서 재사용
         pr_url: "{github-pr-url}"  # Red에서 생성, 이후 자동 업데이트
         pr_number: 42
@@ -514,6 +544,10 @@ batches:
         issue_url: "{linear-issue-url}"
         repo_id: "{backend-repo-id}"
         title: "{title}"
+        package_name: "{package-name}"
+        package_path: "{package-path}"
+        target_directory: "{target-dir}"
+        reference_pattern: "{ref-path}"
         branch: null               # Red phase 전이므로 아직 없음
         pr_url: null
         pr_number: null
