@@ -87,6 +87,17 @@ allowed-tools:
   └── [Sub] {PageName} 테스트 작성
 ```
 
+**Package/Service 매핑:**
+
+TechSpec Design 섹션의 "Component & Code" 파일 구조에서 작업 대상 패키지를 식별한다:
+
+1. 파일 구조(예: `src/modules/postAd/`)에서 패키지 내 경로 추출
+2. 해당 경로가 속한 패키지 식별 (예: `packages/export-kotisaari-ui`)
+3. 같은 패키지 내 유사 모듈을 참조 패턴으로 지정 (예: `src/modules/advertisementStatus/`)
+4. 모든 issue가 같은 패키지면 한 번만 식별, 다르면 issue별로 매핑
+
+**결과물**: `{ package_name, package_path, target_directory, reference_pattern }`
+
 ### Phase 3: 사용자 확인
 
 분류 결과를 AskUserQuestion으로 제시하여 확인받는다:
@@ -157,6 +168,12 @@ mcp__plugin_linear_linear__create_issue(
   description: """
 {관련 AC, test cases, design 내용 요약}
 
+## 작업 대상
+
+- **패키지**: `{package_name}` (`{package_path}`)
+- **작업 디렉토리**: `{package_path}/{target_directory}`
+- **기존 패턴 참조**: `{package_path}/{reference_pattern}`
+
 ## TDD Workflow (Red-Green-Refactor)
 
 이 issue는 TDD 방식으로 구현합니다.
@@ -193,7 +210,15 @@ Sub-issue 생성 시:
 mcp__plugin_linear_linear__create_issue(
   title: "{sub-issue title}",
   team: "{team}",
-  description: "{상세 구현 내용}",
+  description: """
+{상세 구현 내용}
+
+## 작업 대상
+
+- **패키지**: `{package_name}` (`{package_path}`)
+- **작업 디렉토리**: `{package_path}/{target_directory}`
+- **기존 패턴 참조**: `{package_path}/{reference_pattern}`
+""",
   parent: "{parent issue id}",
   labels: ["tdd"],  # ⚠️ REQUIRED - 절대 생략 금지! /tdd:implement 연동에 필수
   project: "{project name or id}"
@@ -301,6 +326,10 @@ Claude: [AskUserQuestion] 다음 issue 구조로 생성합니다:
      └── RemoveFromCart Usecase
      └── CartPage 테스트
   5. [Related] CartItem 컴포넌트 구현
+
+  작업 대상: `@daangn/cart-ui` (`packages/cart-ui`)
+  작업 디렉토리: `packages/cart-ui/src/modules/cart/`
+  참조 패턴: `packages/cart-ui/src/modules/product/`
 
 사용자: 좋습니다
 
