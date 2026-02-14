@@ -37,16 +37,6 @@
         ]
       }
     ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/Users/roger/.claude/hooks/skill-activation-forced-eval.sh"
-          }
-        ]
-      }
-    ],
     "SessionStart": [
       {
         "hooks": [
