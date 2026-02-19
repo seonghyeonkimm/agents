@@ -22,7 +22,7 @@ allowed-tools:
 Workspace 내부 흐름:
 Red      → 테스트 작성 & push            → 🔍 Review Gate 1: 인간 리뷰
 Green    → 구현 코드 push               → 🔍 Review Gate 2: 인간 리뷰
-Refactor → 리팩토링 push → Draft PR 생성 → 🔍 Review Gate 3: 최종 리뷰
+Refactor → 리팩토링 push → Draft PR 생성 → Linear 동기화 → 🔍 Review Gate 3: 최종 리뷰
 최종 승인 → Draft PR → Ready for Review (open)
 ```
 
@@ -229,7 +229,7 @@ Linear issue description의 "작업 대상" 섹션에서 패키지 정보를 추
 - **작업 대상 패키지**: `{package_name}` (`{package_path}`)
 - **작업 디렉토리**: `{package_path}/{target_directory}`
 - **기존 패턴 참조**: `{package_path}/{reference_pattern}` (같은 패키지 내 유사 모듈)
-- **Linear Issue ID**: `{issue_id}` (Linear 동기화용)
+- **Linear Issue ID**: `{issue_id}` (Refactor 완료 시 Linear 동기화용)
 
 ## 관련 테스트 케이스
 
@@ -257,16 +257,6 @@ Linear issue description의 "작업 대상" 섹션에서 패키지 정보를 추
    - 예: `describe('PostAdListItem')`, `it('광고가 0개일 때 광고 생성 유도 영역을 클릭하면 onCreateAd가 호출된다')`
 3. 테스트 실행 → **실패 확인** (Red 상태)
 4. 커밋 & 푸시
-
-### Linear 동기화
-
-```
-ToolSearch(query: "select:mcp__plugin_linear_linear__update_issue")
-update_issue(id: "{issue_id}", state: "started")
-
-ToolSearch(query: "select:mcp__plugin_linear_linear__create_comment")
-create_comment(issueId: "{issue_id}", body: "🔴 Red Phase 완료 - 테스트 작성 완료")
-```
 
 ### 완료 조건
 
@@ -312,13 +302,6 @@ AskUserQuestion:
 3. 테스트 실행 → **성공 확인** (Green 상태)
 4. 커밋 & 푸시
 
-### Linear 동기화
-
-```
-ToolSearch(query: "select:mcp__plugin_linear_linear__create_comment")
-create_comment(issueId: "{issue_id}", body: "🟢 Green Phase 완료")
-```
-
 ### 완료 조건
 
 - [ ] 모든 테스트 통과
@@ -342,7 +325,7 @@ AskUserQuestion:
 
 - **수정 요청** 시 → 피드백에 따라 구현 수정 → 테스트 재실행 → 커밋 & 푸시 → 다시 Review Gate 2
 - **진행** 시 → Step 3로
-- **Refactor 건너뛰기** 시 → Draft PR 생성 + Linear 상태 업데이트 + `gh pr ready` 실행
+- **Refactor 건너뛰기** 시 → Draft PR 생성 + Linear 동기화 (상태 "In Review" + PR 코멘트) + `gh pr ready` 실행
 - **중단** 시 → 작업 중지
 
 ---
@@ -633,7 +616,7 @@ Claude:
 
 - **단일 Task, 전체 워크플로우**: 각 issue당 하나의 vk task를 생성하며, Red→Green→Refactor 전체 지시사항을 포함
 - **Workspace 자율 실행**: workspace agent가 phase를 자체 관리하고, phase 사이에 AskUserQuestion Review Gate로 인간 리뷰
-- **vk update_issue 없음**: vk task는 한번 생성 후 변경하지 않음 (Linear issue 상태 동기화는 workspace가 별도 처리)
+- **vk update_issue 없음**: vk task는 한번 생성 후 변경하지 않음 (Linear 동기화는 Refactor 완료 시에만 수행: 상태 "In Review" 전환 + PR 링크 코멘트)
 - **상태 확인 기반 진행**: `/tdd:implement` 재실행 시 vk issue 상태를 확인하여 batch 진행 여부 결정
 - `--base` 파라미터로 implement.yaml의 base_branch를 override 가능
 - 하나의 PR이 전체 TDD 사이클을 포함: Red→Green→Refactor 완료 후 Draft PR 생성, 최종 승인 시 Ready for Review로 전환
