@@ -18,7 +18,7 @@ allowed-tools:
 
 # TDD Start Command
 
-간단한 버그 수정이나 작은 기능 추가를 TDD로 진행한다. 분석→설계→Red→Green→Refactor 전체 사이클을 한 세션에서 처리하며, Draft PR로 진행을 추적하고, 각 phase마다 사용자 리뷰를 받는다.
+간단한 버그 수정이나 작은 기능 추가를 TDD로 진행한다. 분석→설계→Red→Green→Refactor 전체 사이클을 한 세션에서 처리하며, 각 phase마다 사용자 리뷰를 받는다. Refactor 완료 후 Draft PR을 생성한다.
 
 heavyweight flow(`/tdd:spec` → `/tdd:design` → `/tdd:issues` → `/tdd:implement`)와 달리 Linear, Notion, Figma, Vibe Kanban 등 외부 서비스가 불필요하다.
 
@@ -105,7 +105,8 @@ updated_at: "2026-02-11T10:00:00Z"
    question: "이전 TDD 세션이 발견되었습니다.
 
    작업: {task}
-   PR: {pr_url}
+   브랜치: {branch}
+   PR: {pr_url 또는 '아직 생성되지 않음'}
    현재 단계: {phase}
    상태 파일: .claude/docs/{project_name}/tdd-session.yaml
 
@@ -216,7 +217,7 @@ updated_at: "2026-02-11T10:00:00Z"
    - ⚠️ import 에러나 syntax 에러가 아닌 **assertion 실패**여야 함
    - import 에러가 발생하면 import/mock 설정을 수정하여 assertion 실패 상태로 맞춤
 
-4. **branch 생성, commit & push, Draft PR 생성**:
+4. **branch 생성, commit & push**:
 
    **Branch 이름 규칙:**
    - 버그 수정: `fix/{task-keywords}` (예: `fix/cart-negative-quantity`)
@@ -228,35 +229,17 @@ updated_at: "2026-02-11T10:00:00Z"
    git add {test-files}
    git commit -m "test: add failing tests for {task summary}"
    git push -u origin {branch-name}
-   gh pr create --draft --title "{task title}" --body "{PR template}"
    ```
 
-5. **PR description 템플릿**:
-   ```markdown
-   ## TDD Progress
-   - [x] Red: 실패하는 테스트 작성
-   - [ ] Green: 최소 구현
-   - [ ] Refactor: 코드 개선
-
-   ## 작업 설명
-   {task description}
-
-   ## 테스트 케이스
-   {Given/When/Then list from Phase 2}
-
-   ## 구현 접근
-   {approach from Phase 2}
-   ```
-
-6. **세션 상태 업데이트**: phase → "red", branch, pr 정보, test_files, commits.red 기록
+5. **세션 상태 업데이트**: phase → "red", branch, test_files, commits.red 기록
 
 ### Phase 4: (Human) Red 리뷰
 
 ```
 AskUserQuestion:
-  question: "Red Phase 완료. Draft PR을 생성했습니다.
+  question: "Red Phase 완료.
 
-  PR: {pr_url}
+  브랜치: {branch-name}
   테스트 파일: {path}
   테스트 케이스:
   1. {test name} - {description}
@@ -284,29 +267,21 @@ AskUserQuestion:
    npx tsc --noEmit  # 또는 프로젝트에 맞는 타입 체커
    ```
 
-6. **commit & push → Draft PR 업데이트**:
+6. **commit & push**:
    ```bash
    git add {changed-files}
    git commit -m "feat: minimal implementation for {task summary}"
    git push
    ```
 
-7. **PR description 체크리스트 업데이트** (`gh pr edit`):
-   ```markdown
-   - [x] Red: 실패하는 테스트 작성
-   - [x] Green: 최소 구현
-   - [ ] Refactor: 코드 개선
-   ```
-
-8. **세션 상태 업데이트**: phase → "green", source_files, commits.green 기록
+7. **세션 상태 업데이트**: phase → "green", source_files, commits.green 기록
 
 ### Phase 6: (Human) Green 리뷰
 
 ```
 AskUserQuestion:
-  question: "Green Phase 완료. Draft PR이 업데이트되었습니다.
+  question: "Green Phase 완료.
 
-  PR: {pr_url}
   변경 파일:
   1. {file} - {변경 요약}
   2. {file} - {변경 요약}
@@ -316,7 +291,7 @@ AskUserQuestion:
 ```
 
 - 수정 요청 시 → 구현 수정 → 테스트 재실행 → commit & push → 다시 리뷰 (루프)
-- **Refactor 건너뛰기** 선택 시 → Phase 7을 건너뛰고 Phase 8로 직행
+- **Refactor 건너뛰기** 선택 시 → Draft PR 생성 + `gh pr ready` 실행 후 Phase 8로 직행
 
 ### Phase 7: Refactor - 코드 개선
 
@@ -341,21 +316,31 @@ AskUserQuestion:
    npx vitest run  # 또는 npx jest, pytest 등
    ```
 
-4. **commit & push → Draft PR 업데이트**:
+4. **commit & push**:
    ```bash
    git add {changed-files}
    git commit -m "refactor: improve code quality for {task summary}"
    git push
    ```
 
-5. **PR description 체크리스트 완료** (`gh pr edit`):
-   ```markdown
+5. **Draft PR 생성**:
+   ```bash
+   gh pr create --draft --title "{task title}" --body "$(cat <<'EOF'
+   ## TDD Progress
    - [x] Red: 실패하는 테스트 작성
    - [x] Green: 최소 구현
    - [x] Refactor: 코드 개선
+
+   ## 작업 설명
+   {task description}
+
+   ## 테스트 케이스
+   {Given/When/Then list from Phase 2}
+   EOF
+   )"
    ```
 
-6. **세션 상태 업데이트**: phase → "refactor", commits.refactor 기록
+6. **세션 상태 업데이트**: phase → "refactor", pr 정보, commits.refactor 기록
 
 ### Phase 8: 최종 보고
 
@@ -466,7 +451,7 @@ Claude: [Phase 3] Red - 실패하는 테스트 작성
   branch 생성: fix/cart-negative-quantity
   테스트 파일 생성: src/__tests__/cart.test.ts
   테스트 실행: 3개 실패 (expected)
-  Draft PR 생성: https://github.com/org/repo/pull/42
+  commit & push 완료
 
 Claude: [Phase 4] AskUserQuestion
   Red Phase 완료. 선택: 진행 / 수정 요청 / 중단
@@ -477,7 +462,6 @@ Claude: [Phase 5] Green - 최소 구현
   src/domain/cart.ts 수정: addItem()에 validation 추가
   테스트 실행: 3개 통과
   전체 테스트: 회귀 없음
-  Draft PR 업데이트됨
 
 Claude: [Phase 6] AskUserQuestion
   Green Phase 완료. 선택: 진행 / 수정 요청 / Refactor 건너뛰기 / 중단
@@ -508,4 +492,4 @@ Claude: [Phase 10] PR Ready for Review
 - 커밋은 각 phase별로 자동 생성됨 (Red/Green/Refactor)
 - 세션 중단 후 `/tdd:start`를 다시 실행하면 이전 진행 상태에서 재개 가능
 - Refactor phase는 건너뛸 수 있음 (사소한 수정 시)
-- 최종 승인 전까지 PR은 Draft 상태를 유지함
+- Refactor 완료 후 Draft PR 생성, 최종 승인 시 Ready for Review로 전환
