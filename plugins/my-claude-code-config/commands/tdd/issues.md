@@ -11,7 +11,7 @@ allowed-tools:
 
 # TDD Issues Command
 
-`/tdd:spec`과 `/tdd:design`의 결과물을 기반으로 Linear 프로젝트에 issue와 sub-issue를 생성한다.
+`/tdd:spec`과 `/tdd:design`의 결과물을 기반으로 Linear 프로젝트에 issue를 생성한다.
 
 ## Prerequisites
 
@@ -79,13 +79,10 @@ allowed-tools:
 [Blocker] 공통 Interface/상수 정의
 [Blocker] API 인터페이스 설계
 [Blocker] 공통 컴포넌트 구현 ({shared components})
-  └── [Sub] {SharedComponent1}
-  └── [Sub] {SharedComponent2}
 [Related] {PageName} 페이지 구현
-  └── [Sub] {Usecase1} 구현
-  └── [Sub] {Usecase2} 구현
-  └── [Sub] {PageName} 테스트 작성
 ```
+
+> **Sub-issue는 생성하지 않는다.** 하위 작업 항목(Usecase, Component 등)은 issue description 내 체크리스트로 포함한다.
 
 **Package/Service 매핑:**
 
@@ -110,11 +107,8 @@ Blocker Issues:
 2. [Blocker] {issue title} - {description}
 
 Related Issues:
-3. [Related] {issue title}
-   └── [Sub] {sub-issue title}
-   └── [Sub] {sub-issue title}
-4. [Related] {issue title}
-   └── [Sub] {sub-issue title}
+3. [Related] {issue title} - {description}
+4. [Related] {issue title} - {description}
 ```
 
 사용자가 수정을 요청하면 반영 후 다시 확인.
@@ -155,9 +149,8 @@ ToolSearch(query: "select:mcp__plugin_linear_linear__list_issue_labels")
 
 **생성 순서:**
 
-1. **Blocker issue 먼저 생성** (parent issues)
-2. **Related issue 생성** (parent issues)
-3. **Sub-issue 생성** (parent issue ID 참조)
+1. **Blocker issue 먼저 생성**
+2. **Related issue 생성**
 
 **Issue 생성 시 포함할 내용:**
 
@@ -205,26 +198,6 @@ npx vitest run       # Test
 )
 ```
 
-Sub-issue 생성 시:
-```
-mcp__plugin_linear_linear__create_issue(
-  title: "{sub-issue title}",
-  team: "{team}",
-  description: """
-{상세 구현 내용}
-
-## 작업 대상
-
-- **패키지**: `{package_name}` (`{package_path}`)
-- **작업 디렉토리**: `{package_path}/{target_directory}`
-- **기존 패턴 참조**: `{package_path}/{reference_pattern}`
-""",
-  parent: "{parent issue id}",
-  labels: ["tdd"],  # ⚠️ REQUIRED - 절대 생략 금지! /tdd:implement 연동에 필수
-  project: "{project name or id}"
-)
-```
-
 ### Phase 4.5: Label 검증 (필수)
 
 Issue 생성 완료 후, 모든 issue에 "tdd" label이 붙었는지 검증한다:
@@ -256,7 +229,6 @@ Blocker Issues ({N}개):
 
 Related Issues ({N}개):
 - {issue title} ({linear url})
-  └── {sub-issue count}개 sub-issues
 
 Total: {total}개 issues
 
@@ -321,10 +293,7 @@ Claude: [AskUserQuestion] 다음 issue 구조로 생성합니다:
   3. [Blocker] 공통 컴포넌트 (QuantitySelector, Button)
 
   Related Issues:
-  4. [Related] CartPage 구현
-     └── AddToCart Usecase
-     └── RemoveFromCart Usecase
-     └── CartPage 테스트
+  4. [Related] CartPage 구현 (AddToCart, RemoveFromCart Usecase 포함)
   5. [Related] CartItem 컴포넌트 구현
 
   작업 대상: `@daangn/cart-ui` (`packages/cart-ui`)
@@ -344,10 +313,9 @@ Claude: Issue 생성 완료!
 
   Related Issues (2개):
   - [Related] CartPage 구현 (https://linear.com/issue/PROJ-4)
-    └── 3개 sub-issues
   - [Related] CartItem 컴포넌트 구현 (https://linear.com/issue/PROJ-5)
 
-  Total: 9개 issues
+  Total: 5개 issues
 
   조회 방법: Linear에서 직접 확인하세요.
   다음 단계: /tdd:implement으로 병렬 워크스페이스 생성
