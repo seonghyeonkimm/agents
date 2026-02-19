@@ -438,6 +438,7 @@ AskUserQuestion:
 
 ```yaml
 # .claude/docs/{project-name}/implement.yaml
+executor: "vibe_kanban"
 project:
   id: "{project-id}"
   name: "{project-name}"
