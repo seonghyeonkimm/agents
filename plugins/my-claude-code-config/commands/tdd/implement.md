@@ -216,8 +216,6 @@ Linear issue description의 "작업 대상" 섹션에서 패키지 정보를 추
 
 ````
 🚫 **금지 사항 — 아래 규칙을 반드시 준수하세요:**
-- `Skill` 도구를 호출하지 마세요 (어떤 스킬이든 — `/tdd:start`, `/plan`, `/commit` 등 모두 금지)
-- `EnterPlanMode` 도구를 호출하지 마세요
 - PR 생성 시 `--base` 플래그를 반드시 아래 Context의 **Base Branch** 값으로 지정하세요. `main`을 base로 사용하지 마세요.
 - 아래 Step 1부터 순서대로 실행하세요. 각 Step 완료 후 Review Gate에서 반드시 멈추고 인간의 리뷰를 받으세요.
 
