@@ -204,7 +204,7 @@ Linear issue description의 "작업 대상" 섹션에서 패키지 정보를 추
    mcp__vibe_kanban__start_workspace_session(
      task_id: "{task_id}",
      executor: "CLAUDE_CODE",
-     repos: [{ repo_id: "{task의-repo-id}", base_branch: "{base_branch}" }]
+     repos: [{ repo_id: "{task의-repo-id}", base_branch: "origin/{base_branch}" }]
    )
    ```
 
