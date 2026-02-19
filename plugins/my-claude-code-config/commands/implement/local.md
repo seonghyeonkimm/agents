@@ -27,15 +27,15 @@ allowed-tools:
   ...
 
 병렬 실행 (Conductor):
-  Workspace A: /implement:local --issue TEAM-101 → Red → Green → Refactor → PR
-  Workspace B: /implement:local --issue TEAM-102 → Red → Green → Refactor → PR
-  Workspace C: /implement:local --issue TEAM-103 → Red → Green → Refactor → PR
+  Workspace A: /tdd:implement:local --issue TEAM-101 → Red → Green → Refactor → PR
+  Workspace B: /tdd:implement:local --issue TEAM-102 → Red → Green → Refactor → PR
+  Workspace C: /tdd:implement:local --issue TEAM-103 → Red → Green → Refactor → PR
 ```
 
 ## Usage
 
 ```
-/implement:local [--base <branch>] [--issue <linear-issue-id>]
+/tdd:implement:local [--base <branch>] [--issue <linear-issue-id>]
 ```
 
 ### Parameters
@@ -49,13 +49,13 @@ allowed-tools:
 
 ```bash
 # 기본 실행 (orchestrator: 첫 실행이면 batch 준비, 재실행이면 상태 확인)
-/implement:local
+/tdd:implement:local
 
 # base branch 직접 지정
-/implement:local --base feature/checkout
+/tdd:implement:local --base feature/checkout
 
 # 특정 issue만 실행 (worker mode — Conductor 병렬 실행용)
-/implement:local --issue TEAM-123
+/tdd:implement:local --issue TEAM-123
 ```
 
 ## Prerequisites
@@ -402,9 +402,9 @@ Linear issue description의 "작업 대상" 섹션에서 패키지 정보를 추
      실행 방식:
      - 순차: 현재 workspace에서 하나씩 처리합니다
      - 병렬: 각 issue를 별도 Conductor workspace에서 실행하세요
-       /implement:local --issue {issue-id-1}
-       /implement:local --issue {issue-id-2}
-       /implement:local --issue {issue-id-3}"
+       /tdd:implement:local --issue {issue-id-1}
+       /tdd:implement:local --issue {issue-id-2}
+       /tdd:implement:local --issue {issue-id-3}"
    ```
 
 ### Phase 5: 순차 실행 (Orchestrator inline)
@@ -432,7 +432,7 @@ Linear issue description의 "작업 대상" 섹션에서 패키지 정보를 추
    진행할까요? (진행 / 중단)"
    ```
 
-**중단 시**: 현재 상태가 implement.yaml에 저장되어 있으므로, 재실행(`/implement:local`) 시 이어서 진행 가능.
+**중단 시**: 현재 상태가 implement.yaml에 저장되어 있으므로, 재실행(`/tdd:implement:local`) 시 이어서 진행 가능.
 
 ### Phase 6: 상태 저장
 
@@ -510,11 +510,11 @@ Project: {Project Name}
 TechSpec: {document URL}
 
 각 Conductor workspace에서 실행하세요:
-- /implement:local --issue {issue-id-1}  ← {title}
-- /implement:local --issue {issue-id-2}  ← {title}
-- /implement:local --issue {issue-id-3}  ← {title}
+- /tdd:implement:local --issue {issue-id-1}  ← {title}
+- /tdd:implement:local --issue {issue-id-2}  ← {title}
+- /tdd:implement:local --issue {issue-id-3}  ← {title}
 
-모든 issue 완료 후 /implement:local 로 다음 batch를 확인하세요.
+모든 issue 완료 후 /tdd:implement:local 로 다음 batch를 확인하세요.
 ```
 
 #### 재실행 시 (상태 확인)
@@ -550,7 +550,7 @@ Batch {N} 모든 issue 완료!
 ### Phase W1: 초기화
 
 1. `.claude/docs/{project-name}/implement.yaml` 로드
-   - implement.yaml이 없으면 → 에러: "먼저 /implement:local 을 실행하여 batch를 준비하세요"
+   - implement.yaml이 없으면 → 에러: "먼저 /tdd:implement:local 을 실행하여 batch를 준비하세요"
 2. `--issue <id>`에 해당하는 issue를 batches에서 찾기
    - 없으면 → 에러: "해당 issue를 찾을 수 없습니다" + 유효한 issue 목록 표시
 3. issue의 현재 상태 확인:
@@ -561,7 +561,7 @@ Batch {N} 모든 issue 완료!
 ### Phase W2: Task Description 로드
 
 1. `.claude/docs/{project-name}/tasks/{issue-id}.md` 로드
-   - 없으면 → 에러: "task description이 없습니다. /implement:local 을 먼저 실행하세요"
+   - 없으면 → 에러: "task description이 없습니다. /tdd:implement:local 을 먼저 실행하세요"
 
 ### Phase W3: 실행
 
@@ -583,7 +583,7 @@ Branch: {branch}
 PR: {pr_url}
 
 implement.yaml이 업데이트되었습니다.
-모든 batch issue 완료 후 /implement:local 로 다음 batch를 확인하세요.
+모든 batch issue 완료 후 /tdd:implement:local 로 다음 batch를 확인하세요.
 ```
 
 ---
@@ -596,11 +596,11 @@ implement.yaml이 업데이트되었습니다.
 | Linear issue 조회 실패 | `/tdd:issues`를 먼저 실행하라고 안내 |
 | "tdd" label issue 없음 | `/tdd:issues`를 먼저 실행하라고 안내 |
 | implement.yaml `executor: "vibe_kanban"` | AskUserQuestion으로 local 전환 여부 확인 |
-| `--issue`로 실행했으나 implement.yaml 없음 | `/implement:local`을 먼저 실행하라고 안내 |
+| `--issue`로 실행했으나 implement.yaml 없음 | `/tdd:implement:local`을 먼저 실행하라고 안내 |
 | `--issue`로 실행했으나 해당 issue 없음 | 에러 + 유효한 issue 목록 표시 |
 | `--issue`로 실행했으나 이미 completed | "이미 완료된 issue입니다" 안내 |
 | `--issue`로 실행했으나 다른 worker가 in_progress | AskUserQuestion: 이어서 진행할지 확인 |
-| task description 파일 없음 | `/implement:local`을 먼저 실행하라고 안내 |
+| task description 파일 없음 | `/tdd:implement:local`을 먼저 실행하라고 안내 |
 | 순차 실행 중 세션 중단 | implement.yaml에 phase 저장 → 재실행 시 이어서 진행 |
 | Green phase 3회 시도 후 실패 | AskUserQuestion으로 접근 방법 논의 |
 | 전체 테스트 회귀 | 어떤 기존 테스트가 깨졌는지 표시, 대응 방법 논의 |
@@ -610,7 +610,7 @@ implement.yaml이 업데이트되었습니다.
 ## Example: Orchestrator 첫 실행 → 순차 실행
 
 ```
-사용자: /implement:local
+사용자: /tdd:implement:local
 
 Claude: .claude/docs/my-feature/meta.yaml 에서 project.id를 로드합니다...
 Claude: implement.yaml이 없습니다. 첫 실행입니다.
@@ -637,9 +637,9 @@ Claude: [AskUserQuestion] Batch 1 준비 완료 (3개 issue)
   실행 방식:
   - 순차: 현재 workspace에서 하나씩 처리
   - 병렬: 각 Conductor workspace에서 실행
-    /implement:local --issue TEAM-101
-    /implement:local --issue TEAM-102
-    /implement:local --issue TEAM-103
+    /tdd:implement:local --issue TEAM-101
+    /tdd:implement:local --issue TEAM-102
+    /tdd:implement:local --issue TEAM-103
 
 사용자: 순차
 
@@ -668,7 +668,7 @@ Claude: Issue 2/3 시작: Cart UI Component
 ## Example: 병렬 실행 (Conductor)
 
 ```
-사용자: /implement:local
+사용자: /tdd:implement:local
 
 Claude: (... 동일한 setup ...)
 
@@ -681,16 +681,16 @@ Claude:
   Batch 1 준비 완료 (병렬 실행)
 
   각 Conductor workspace에서 실행하세요:
-  - /implement:local --issue TEAM-101  ← Cart Interface 및 상수 정의
-  - /implement:local --issue TEAM-102  ← Cart UI Component
-  - /implement:local --issue TEAM-103  ← Cart API 엔드포인트
+  - /tdd:implement:local --issue TEAM-101  ← Cart Interface 및 상수 정의
+  - /tdd:implement:local --issue TEAM-102  ← Cart UI Component
+  - /tdd:implement:local --issue TEAM-103  ← Cart API 엔드포인트
 
-  모든 issue 완료 후 /implement:local 로 다음 batch를 확인하세요.
+  모든 issue 완료 후 /tdd:implement:local 로 다음 batch를 확인하세요.
 ```
 
 ```
 (Conductor Workspace A)
-사용자: /implement:local --issue TEAM-101
+사용자: /tdd:implement:local --issue TEAM-101
 
 Claude: implement.yaml 로드... Issue: Cart Interface 및 상수 정의
 Claude: Task description 로드... .claude/docs/my-feature/tasks/TEAM-101.md
@@ -705,7 +705,7 @@ Claude: Issue 완료! PR: https://github.com/...
 ## Example: 재실행 → 상태 확인 → Batch 2
 
 ```
-사용자: /implement:local
+사용자: /tdd:implement:local
 
 Claude: implement.yaml 발견 (executor: local)
 Claude: Batch 1 상태 확인
