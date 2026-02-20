@@ -80,6 +80,14 @@ ToolSearch로 MCP 도구를 로드한 뒤 컨텍스트를 수집한다.
    - ⚠️ Entity/Command 헤더 없이 테이블만 작성
    - 정상 → 에러 → 엣지 케이스 순서로 테스트 케이스 테이블 작성
 
+### Phase 3.5: AC ↔ TC 추적성 검증
+
+작성 완료 후 Acceptance Criteria와 Functional Requirements의 대응 관계를 검증한다.
+
+- 각 AC 항목에 대응하는 TC(Given/When/Then 행)가 **최소 1개** 존재하는지 확인
+- 대응 TC가 없는 AC → TC를 추가하거나 AC를 제거
+- TC가 어떤 AC에도 속하지 않으면 → AC를 추가하거나 해당 TC의 필요성 재검토
+
 ### Phase 4: Linear 문서 생성
 
 ```
