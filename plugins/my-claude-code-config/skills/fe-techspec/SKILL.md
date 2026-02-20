@@ -116,7 +116,10 @@ SLA/SLO 기준의 시스템 요구사항.
    - Then에서 결과 규칙(파생 값, 조건부 동작) 식별
    - 자연어 기술만, 함수명/시그니처는 구현 시 결정
 3. **Usecase**: 주요 사용 시나리오 테이블 (Input → Output)
-4. **Component & States**: 컴포넌트 계층 + State 설계
+4. **Component & Visual Contract**: 컴포넌트 계층 설계. 두 유형으로 분류:
+   - **Container**: Usecase 연결, 서버 상태 구독, 데이터 가공 → 하위 Presentational에 전달. Visual Contract 없음
+   - **Presentational**: Props/Callbacks 기반 순수 UI. Visual Contract 필수 (Layout, States, Interactions)
+   - Figma가 있으면 `get_design_context`/`get_variable_defs`에서 추출, 없으면 테스트 케이스에서 도출
 5. **Usecase-Component Integration**: 연결 지점 정의
 
 **데이터 모델 가이드:**
@@ -172,3 +175,4 @@ SLA/SLO 기준의 시스템 요구사항.
 | 비즈니스 규칙 누락 | Given/When/Then에서 규칙 미식별 | Business Rules 테이블 작성 |
 | 규칙 과다 명세 | Design에서 함수명/시그니처까지 결정 | 자연어 기술만, 구현은 TDD에 위임 |
 | 규칙 중복 구현 | UI/API에서 같은 규칙을 각각 구현 | 구현 시 `entity-object-pattern` 스킬 참조 |
+| Container/Presentational 혼합 | 하나의 컴포넌트가 Usecase 호출 + UI 렌더링 | Container(데이터 흐름)와 Presentational(Props/Callbacks)을 분리 |
