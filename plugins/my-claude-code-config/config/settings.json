@@ -74,7 +74,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/typecheck/post-edit.sh"
+            "command": "~/.claude/hooks/code-quality/post-edit.sh"
           }
         ]
       }
