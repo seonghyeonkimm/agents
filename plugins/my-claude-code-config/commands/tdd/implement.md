@@ -21,10 +21,10 @@ allowed-tools:
 
 ```
 Workspace 내부 흐름:
-Red      → 테스트 작성 & push                          → 🔍 Review Gate 1: 인간 리뷰
-Green    → 구현 코드 push                             → 🔍 Review Gate 2: 인간 리뷰
+Red      → 테스트 작성 & commit                        → 🔍 Review Gate 1: 인간 리뷰
+Green    → 구현 코드 commit                           → 🔍 Review Gate 2: 인간 리뷰
 Visual   → Figma 비교 & Storybook/Preview (조건부)      → 🔍 Review Gate 2.5: 인간 리뷰
-Refactor → 리팩토링 push → Draft PR 생성 → Linear 동기화 → 🔍 Review Gate 3: 최종 리뷰
+Refactor → 리팩토링 commit & push → Draft PR 생성 → Linear 동기화 → 🔍 Review Gate 3: 최종 리뷰
 최종 승인 → Draft PR → Ready for Review (open)
 ```
 
@@ -244,7 +244,7 @@ Linear issue description의 "작업 대상" 섹션에서 패키지 정보를 추
 
 ## Step 1: 🔴 RED — 실패하는 테스트 작성
 
-이 Step의 목표는 **테스트만** 작성하고 **커밋 & 푸시**하는 것입니다.
+이 Step의 목표는 **테스트만** 작성하고 **커밋**하는 것입니다.
 구현 코드를 작성하지 마세요.
 
 ### 작업 순서
@@ -260,14 +260,15 @@ Linear issue description의 "작업 대상" 섹션에서 패키지 정보를 추
    - ⚠️ 각 테스트의 assertion은 테스트 대상의 출력/상태/부수효과를 **직접 검증**해야 함
    - ❌ `expect(true).toBe(false)`, `expect(1).toBe(2)` 등 placeholder assertion
    - ✅ `expect(result.error).toBeDefined()`, `expect(onSubmit).toHaveBeenCalledWith(...)`
+   - ⚠️ mocking은 최소화. 외부 API, 타이머 등 **제어 불가능한 의존성**만 mock하고, 가능하다면 의존성 주입(DI)을 통해 실제 구현을 활용
+     - 예: DB 대신 in-memory repository 주입, API client 대신 fake client 주입
 3. 테스트 실행 → **실패 확인** (Red 상태)
-4. 커밋 & 푸시
+4. 커밋
 
 ### 완료 조건
 
 - [ ] 테스트 파일이 존재함
 - [ ] 테스트 실행 시 실패함 (구현이 없으므로)
-- [ ] 브랜치에 push됨
 
 ### 🔍 Review Gate 1
 
@@ -292,7 +293,7 @@ AskUserQuestion:
   선택: 진행 (Green으로) / 수정 요청 / 중단"
 ```
 
-- **수정 요청** 시 → 피드백에 따라 테스트 수정 → 커밋 & 푸시 → 다시 Review Gate 1
+- **수정 요청** 시 → 피드백에 따라 테스트 수정 → 커밋 → 다시 Review Gate 1
 - **진행** 시 → Step 2로
 - **중단** 시 → 작업 중지 (현재 상태 유지)
 
@@ -312,14 +313,13 @@ AskUserQuestion:
    - 리팩토링이나 코드 정리 금지
    - 필요 이상의 추상화 금지
 3. 테스트 실행 → **성공 확인** (Green 상태)
-4. 커밋 & 푸시
+4. 커밋
 
 ### 완료 조건
 
 - [ ] 해당 패키지의 **전체** 테스트 통과 (새 테스트만이 아님)
 - [ ] 기존 테스트 회귀 없음 (전체 테스트 수/통과 수 보고)
 - [ ] 최소한의 구현만 포함 (no gold plating)
-- [ ] 브랜치에 push됨
 
 ### 🔍 Review Gate 2
 
@@ -343,7 +343,7 @@ AskUserQuestion:
   선택: 진행 / 수정 요청 / Refactor 건너뛰기 / 중단"
 ```
 
-- **수정 요청** 시 → 피드백에 따라 구현 수정 → 테스트 재실행 → 커밋 & 푸시 → 다시 Review Gate 2
+- **수정 요청** 시 → 피드백에 따라 구현 수정 → 테스트 재실행 → 커밋 → 다시 Review Gate 2
 - **진행** 시 → Visual Verification 조건 충족 시 Step 2.5로, 미충족 시 Step 3로
 - **Refactor 건너뛰기** 시 → Draft PR 생성 + Linear 동기화 (상태 "In Review" + PR 코멘트) + `gh pr ready` 실행
 - **중단** 시 → 작업 중지
@@ -409,14 +409,13 @@ AskUserQuestion:
    d. 테스트 실행 → Green 유지 확인 (깨지면 revert 후 다른 방법 시도)
    e. 수렴 시 또는 최대 5회 도달 시 → ralph-loop 종료
 
-4. **커밋 & 푸시**
+4. **커밋**
 
 ### 완료 조건
 
 - [ ] Storybook story 또는 preview 페이지가 생성됨
 - [ ] Figma 디자인과 구현의 주요 레이아웃/색상/타이포그래피가 일치
 - [ ] 모든 테스트 여전히 통과 (Green 유지)
-- [ ] 브랜치에 push됨
 
 ### 🔍 Review Gate 2.5
 
@@ -437,7 +436,7 @@ AskUserQuestion:
   선택: 진행 (Refactor로) / 수정 요청 / 중단"
 ```
 
-- **수정 요청** 시 → ralph-loop 재시작하여 추가 수정 → 커밋 & 푸시 → 다시 Review Gate 2.5
+- **수정 요청** 시 → ralph-loop 재시작하여 추가 수정 → 커밋 → 다시 Review Gate 2.5
 - **진행** 시 → Step 3로
 - **중단** 시 → 작업 중지
 
@@ -464,7 +463,12 @@ AskUserQuestion:
    npx vitest run
    ```
    실패 시 수정 후 재실행. 모두 통과해야 commit 가능.
-5. 커밋 & 푸시
+5. 커밋 & 푸시 (첫 push):
+   ```bash
+   git add {changed-files}
+   git commit -m "refactor: improve code quality for {task summary}"
+   git push -u origin {branch-name}
+   ```
 6. Draft PR 생성:
    ```bash
    gh pr create --draft --base {base_branch} \
