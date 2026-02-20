@@ -173,6 +173,7 @@ mcp__plugin_linear_linear__create_issue(
 
 ### 1. 🔴 Red - 실패하는 테스트 작성
 - 위 Given/When/Then 테스트 케이스를 실제 테스트 코드로 작성
+- 테스트 파일은 대상 소스 파일과 같은 디렉토리에 배치 (예: `cart.ts` → `cart.test.ts`)
 - 테스트 실행 → 실패 확인 (구현 전이므로 당연히 실패)
 
 ### 2. 🟢 Green - 최소 구현

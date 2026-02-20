@@ -70,7 +70,7 @@ design:
     - file: "src/domain/cart.ts"
       change: "addItem()에 수량 validation 추가"
 test_files:
-  - src/__tests__/cart.test.ts
+  - src/domain/cart.test.ts
 source_files:
   - src/domain/cart.ts
 commits:
@@ -212,7 +212,9 @@ updated_at: "2026-02-11T10:00:00Z"
    - ⚠️ TC#, TC1 등 번호 접두사를 붙이지 않음 — 설명만 작성
    - ⚠️ UI 렌더링 자체를 검증하는 테스트는 지양. **사용자 행동**과 그 **결과**를 검증하는 통합 테스트 위주로 작성
    - 예: `describe('CartPage')`, `it('장바구니에서 삭제 버튼을 클릭하면 해당 상품이 제거된다')`
-2. 프로젝트 컨벤션에 맞는 테스트 파일 생성/수정
+2. 테스트 파일은 대상 소스 파일과 **같은 디렉토리**에 생성 (예: `src/domain/cart.ts` → `src/domain/cart.test.ts`)
+   - `__tests__/` 디렉토리를 새로 만들지 않음
+   - 단, 프로젝트에 이미 `__tests__/` 컨벤션이 확립되어 있으면 기존 컨벤션을 따름
 3. 테스트 실행 → **실패 확인**
    - ⚠️ import 에러나 syntax 에러가 아닌 **assertion 실패**여야 함
    - import 에러가 발생하면 import/mock 설정을 수정하여 assertion 실패 상태로 맞춤
@@ -449,7 +451,7 @@ Claude: [Phase 2] 분석 & 설계
 
 Claude: [Phase 3] Red - 실패하는 테스트 작성
   branch 생성: fix/cart-negative-quantity
-  테스트 파일 생성: src/__tests__/cart.test.ts
+  테스트 파일 생성: src/domain/cart.test.ts
   테스트 실행: 3개 실패 (expected)
   commit & push 완료
 
