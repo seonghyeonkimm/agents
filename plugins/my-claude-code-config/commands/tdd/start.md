@@ -234,8 +234,10 @@ updated_at: "2026-02-11T10:00:00Z"
 3. 테스트 실행 → **실패 확인**
    - ⚠️ import 에러나 syntax 에러가 아닌 **assertion 실패**여야 함
    - import 에러가 발생하면 import/mock 설정을 수정하여 assertion 실패 상태로 맞춤
+   - ⚠️ mocking은 최소화. 외부 API, 타이머 등 **제어 불가능한 의존성**만 mock하고, 가능하다면 의존성 주입(DI)을 통해 실제 구현을 활용
+     - 예: DB 대신 in-memory repository 주입, API client 대신 fake client 주입
 
-4. **branch 생성, commit & push**:
+4. **branch 생성 & commit**:
 
    **Branch 이름 규칙:**
    - 버그 수정: `fix/{task-keywords}` (예: `fix/cart-negative-quantity`)
@@ -246,7 +248,6 @@ updated_at: "2026-02-11T10:00:00Z"
    git checkout -b {branch-name}
    git add {test-files}
    git commit -m "test: add failing tests for {task summary}"
-   git push -u origin {branch-name}
    ```
 
 5. **세션 상태 업데이트**: phase → "red", branch, test_files, commits.red 기록
@@ -271,7 +272,7 @@ AskUserQuestion:
   선택: 진행 / 수정 요청 / 중단"
 ```
 
-수정 요청 시 → 테스트 수정 → 재실행(실패 확인) → commit & push → 다시 리뷰 요청 (루프)
+수정 요청 시 → 테스트 수정 → 재실행(실패 확인) → commit → 다시 리뷰 요청 (루프)
 
 ### Phase 5: Green - 최소 구현
 
@@ -290,11 +291,10 @@ AskUserQuestion:
    npx tsc --noEmit  # 또는 프로젝트에 맞는 타입 체커
    ```
 
-6. **commit & push**:
+6. **commit**:
    ```bash
    git add {changed-files}
    git commit -m "feat: minimal implementation for {task summary}"
-   git push
    ```
 
 7. **세션 상태 업데이트**: phase → "green", source_files, commits.green 기록
@@ -320,7 +320,7 @@ AskUserQuestion:
   선택: 진행 / 수정 요청 / Refactor 건너뛰기 / 중단"
 ```
 
-- 수정 요청 시 → 구현 수정 → 테스트 재실행 → commit & push → 다시 리뷰 (루프)
+- 수정 요청 시 → 구현 수정 → 테스트 재실행 → commit → 다시 리뷰 (루프)
 - **진행** 시 → Visual Verification 조건 충족 시 Phase 5.5로, 미충족 시 Phase 7(Refactor)로
 - **Refactor 건너뛰기** 선택 시 → Draft PR 생성 + `gh pr ready` 실행 후 Phase 8로 직행
 
@@ -395,11 +395,10 @@ AskUserQuestion:
       - 주요 차이가 해소되었으면 → ralph-loop 종료
       - 최대 5회 반복 후에도 차이가 남으면 → 남은 차이 목록과 함께 종료
 
-4. **commit & push**:
+4. **commit**:
    ```bash
    git add {changed-files} {story-files}
    git commit -m "style: visual verification - match Figma design for {component}"
-   git push
    ```
 
 5. **세션 상태 업데이트**: phase → "visual", visual_verification 섹션 업데이트 (story_files, iterations, status), commits.visual 기록
@@ -421,7 +420,7 @@ AskUserQuestion:
   선택: 진행 (Refactor로) / 수정 요청 / 중단"
 ```
 
-- **수정 요청** 시 → ralph-loop 재시작하여 추가 수정 → commit & push → 다시 리뷰
+- **수정 요청** 시 → ralph-loop 재시작하여 추가 수정 → commit → 다시 리뷰
 - **진행** 시 → Phase 7(Refactor)로
 - **중단** 시 → 작업 중지
 
@@ -448,11 +447,11 @@ AskUserQuestion:
    npx vitest run  # 또는 npx jest, pytest 등
    ```
 
-4. **commit & push**:
+4. **commit & push** (첫 push):
    ```bash
    git add {changed-files}
    git commit -m "refactor: improve code quality for {task summary}"
-   git push
+   git push -u origin {branch-name}
    ```
 
 5. **Draft PR 생성**:
@@ -596,7 +595,7 @@ Claude: [Phase 3] Red - 실패하는 테스트 작성
   branch 생성: fix/cart-negative-quantity
   테스트 파일 생성: src/domain/cart.test.ts
   테스트 실행: 3개 실패 (expected)
-  commit & push 완료
+  commit 완료
 
 Claude: [Phase 4] AskUserQuestion
   Red Phase 완료. 선택: 진행 / 수정 요청 / 중단
