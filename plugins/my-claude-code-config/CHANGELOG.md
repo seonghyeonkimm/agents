@@ -7,11 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `code-quality/post-edit.sh` hook: biome check --write (format+lint auto-fix) + tsc --noEmit 통합 PostToolUse hook
+- `pr` command: Pre-flight Checks (typecheck, biome/lint, tests) — PR 생성 전 자동 검사 & 수정
+
 ### Changed
 - `wrap`: skill+command → command 단독으로 통합; 분석 체크리스트, 실수 방지 가이드 병합
 
 ### Removed
 - `skills/wrap/` 디렉토리 (내용은 command에 병합)
+- `typecheck/post-edit.sh` hook: code-quality/post-edit.sh로 대체
 
 ## [1.0.0] - 2026-01-31
 
