@@ -216,6 +216,14 @@ list_issues(project: "{project-id}", labels: ["tdd"])
   update_issue(id: "{issue-id}", labels: ["tdd"])
   ```
 
+### Phase 4.7: TC → Issue 커버리지 검증
+
+생성된 이슈들이 TechSpec의 모든 테스트 케이스를 커버하는지 확인한다.
+
+- TechSpec Functional Requirements의 모든 TC 번호가 최소 1개 이슈의 description에 포함되어 있는지 확인
+- 미할당 TC가 있으면 → 가장 관련성 높은 기존 이슈에 추가하거나 새 이슈 생성
+- 결과를 커버리지 요약으로 보고: `TC 커버리지: {covered}/{total} (미할당: #{numbers})`
+
 ### Phase 5: 결과 보고
 
 ```

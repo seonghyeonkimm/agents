@@ -14,6 +14,7 @@ allowed-tools:
   - Grep
   - AskUserQuestion
   - ToolSearch
+  - Skill
 ---
 
 # TDD Start Command
@@ -62,7 +63,7 @@ branch: "fix/cart-negative-quantity"
 pr:
   number: 42
   url: "https://github.com/org/repo/pull/42"
-phase: "plan"  # plan | red | green | refactor | done
+phase: "plan"  # plan | red | green | visual | refactor | done
 design:
   test_cases:
     - "Given 수량 -1 / When 장바구니 추가 / Then 에러"
@@ -76,7 +77,14 @@ source_files:
 commits:
   red: null
   green: null
+  visual: null
   refactor: null
+visual_verification:
+  enabled: false
+  figma_url: null
+  story_files: []
+  iterations: 0
+  status: null  # skipped | completed | partial
 created_at: "2026-02-11T10:00:00Z"
 updated_at: "2026-02-11T10:00:00Z"
 ```
@@ -153,6 +161,11 @@ updated_at: "2026-02-11T10:00:00Z"
    Glob("tsconfig.json") → tsc
    ```
 
+   **Figma URL 확인:**
+   - 작업 설명에 Figma URL (`figma.com` 포함)이 포함되어 있으면 추출하여 저장
+   - 없으면 AskUserQuestion: "Figma 디자인 URL이 있나요? (UI 작업이 아니면 비워두세요)"
+   - 비어있으면 `null`로 저장 (Visual Verification 비활성화)
+
 3. **스코프 판단**: 10개 이상의 테스트 케이스가 필요하거나 다수 모듈에 걸치는 작업이면 AskUserQuestion으로 heavyweight flow 추천
 
 4. **세션 상태 파일 초기 생성**:
@@ -212,6 +225,9 @@ updated_at: "2026-02-11T10:00:00Z"
    - ⚠️ TC#, TC1 등 번호 접두사를 붙이지 않음 — 설명만 작성
    - ⚠️ UI 렌더링 자체를 검증하는 테스트는 지양. **사용자 행동**과 그 **결과**를 검증하는 통합 테스트 위주로 작성
    - 예: `describe('CartPage')`, `it('장바구니에서 삭제 버튼을 클릭하면 해당 상품이 제거된다')`
+   - ⚠️ 각 테스트의 assertion은 테스트 대상의 출력/상태/부수효과를 **직접 검증**해야 함
+   - ❌ `expect(true).toBe(false)`, `expect(1).toBe(2)` 등 placeholder assertion
+   - ✅ `expect(result.error).toBeDefined()`, `expect(onSubmit).toHaveBeenCalledWith(...)`
 2. 테스트 파일은 대상 소스 파일과 **같은 디렉토리**에 생성 (예: `src/domain/cart.ts` → `src/domain/cart.test.ts`)
    - `__tests__/` 디렉토리를 새로 만들지 않음
    - 단, 프로젝트에 이미 `__tests__/` 컨벤션이 확립되어 있으면 기존 컨벤션을 따름
@@ -247,6 +263,11 @@ AskUserQuestion:
   1. {test name} - {description}
   2. {test name} - {description}
 
+  리뷰 포인트:
+  - 테스트 이름이 구현이 아닌 행동을 설명하는가?
+  - 엣지 케이스가 포함되어 있는가?
+  - Phase 2 설계의 TC와 일치하는가?
+
   선택: 진행 / 수정 요청 / 중단"
 ```
 
@@ -263,7 +284,7 @@ AskUserQuestion:
    - 필요 이상의 추상화
 
 3. 대상 테스트 실행 → 통과 확인
-4. 전체 테스트 실행 → 회귀 없음 확인
+4. 해당 패키지의 **전체** 테스트 실행 → 회귀 없음 확인 (전체 테스트 수/통과 수 보고)
 5. 타입 체크 실행 (해당 시):
    ```bash
    npx tsc --noEmit  # 또는 프로젝트에 맞는 타입 체커
@@ -288,12 +309,121 @@ AskUserQuestion:
   1. {file} - {변경 요약}
   2. {file} - {변경 요약}
 
-  모든 테스트 통과.
+  테스트: {통과}/{전체} (신규 {N}개, 기존 {N}개)
+
+  리뷰 포인트:
+  - 구현이 정말 최소한인가? (불필요한 추상화 없는가?)
+  - 기존 테스트 회귀가 없는가?
+
+  다음 단계: {Figma URL이 있고 UI 컴포넌트면 → Visual Verification / 아니면 → Refactor}
+
   선택: 진행 / 수정 요청 / Refactor 건너뛰기 / 중단"
 ```
 
 - 수정 요청 시 → 구현 수정 → 테스트 재실행 → commit & push → 다시 리뷰 (루프)
+- **진행** 시 → Visual Verification 조건 충족 시 Phase 5.5로, 미충족 시 Phase 7(Refactor)로
 - **Refactor 건너뛰기** 선택 시 → Draft PR 생성 + `gh pr ready` 실행 후 Phase 8로 직행
+
+### Phase 5.5: (조건부) Visual Verification — Figma 디자인 매칭
+
+> 이 Phase는 **UI 컴포넌트 작업 + Figma URL이 있는 경우**에만 실행된다.
+> 조건 미충족 시 자동으로 Phase 7(Refactor)로 건너뜀.
+
+**진입 조건 확인:**
+1. Phase 2 설계에 UI 컴포넌트(Presentational)가 포함되어 있는가?
+2. Phase 1에서 Figma URL이 수집되었는가? (`visual_verification.figma_url`이 null이 아닌가?)
+3. 프로젝트에 Storybook (`Glob("**/.storybook")`) 또는 dev server가 있는가?
+
+하나라도 미충족 시: "Visual Verification 조건 미충족 (사유: {미충족 항목}). Refactor로 진행합니다." 출력 후 Phase 7로 이동.
+
+**작업 순서:**
+
+1. **Preview 환경 준비**:
+
+   **Storybook 감지:**
+   ```
+   Glob("**/.storybook") 또는 package.json에 "@storybook/*" 의존성
+   ```
+   - 감지됨 → 컴포넌트와 같은 디렉토리에 `{Component}.stories.tsx` 생성
+     - 기존 `.stories.*` 파일의 CSF 버전(CSF2/CSF3)을 확인하여 동일 형식 사용
+   - 감지 안됨 → 프로젝트 라우팅에 맞는 preview 페이지 생성 (예: `app/dev/preview/{component}/page.tsx`)
+
+   **Story/Preview 파일 구성:**
+   - Phase 2 설계의 각 Presentational 컴포넌트에 대해 story 작성
+   - Visual Contract의 모든 States (default, loading, empty, error 등)를 각각 story로 생성
+   - 테스트에서 사용한 mock data를 활용하여 Props 주입
+
+2. **Figma 참조 이미지 캡처**:
+   ```
+   ToolSearch(query: "select:mcp__claude_ai_Figma__get_screenshot")
+   → Figma URL에서 fileKey, nodeId 추출
+   → mcp__claude_ai_Figma__get_screenshot(fileKey: "{key}", nodeId: "{id}")
+   ```
+   - nodeId가 URL에 없으면 `get_metadata`로 프레임 목록 조회 후 AskUserQuestion으로 선택
+
+3. **ralph-loop 시작 — 반복 비교 & 수정**:
+   ```
+   Skill(skill: "ralph-loop:ralph-loop")
+   ```
+
+   ralph-loop을 사용할 수 없으면 수동으로 1회 비교 후 진행.
+
+   ralph-loop 내 각 iteration에서:
+
+   a. **구현 스크린샷 캡처**:
+      ```
+      ToolSearch(query: "select:mcp__claude-in-chrome__tabs_context_mcp")
+      → tabs_context_mcp(createIfEmpty: true)
+      → navigate(url: "{storybook_url 또는 preview_url}", tabId: {tabId})
+      → computer(action: "screenshot", tabId: {tabId})
+      ```
+
+   b. **Figma vs 구현 비교 분석**:
+      - 레이아웃 차이 (여백, 정렬, 크기)
+      - 색상/타이포그래피 차이
+      - 컴포넌트 상태별 렌더링 차이
+
+   c. **차이점 수정**:
+      - CSS/스타일 코드 수정
+      - 레이아웃 구조 조정
+      - 디자인 토큰 적용
+
+   d. **테스트 실행 → 여전히 Green 확인**
+      - 기존 테스트가 깨지면 수정 revert 후 다른 방법 시도
+
+   e. **수렴 판단**:
+      - 주요 차이가 해소되었으면 → ralph-loop 종료
+      - 최대 5회 반복 후에도 차이가 남으면 → 남은 차이 목록과 함께 종료
+
+4. **commit & push**:
+   ```bash
+   git add {changed-files} {story-files}
+   git commit -m "style: visual verification - match Figma design for {component}"
+   git push
+   ```
+
+5. **세션 상태 업데이트**: phase → "visual", visual_verification 섹션 업데이트 (story_files, iterations, status), commits.visual 기록
+
+### Phase 5.6: (Human) Visual Verification 리뷰
+
+```
+AskUserQuestion:
+  question: "🎨 Visual Verification 완료.
+
+  비교 결과:
+  - {component}: Figma 매칭 상태 (✅ 일치 / ⚠️ 잔여 차이: {목록})
+
+  생성된 파일:
+  - {story/preview file path}
+
+  ralph-loop: {N}회 반복
+
+  선택: 진행 (Refactor로) / 수정 요청 / 중단"
+```
+
+- **수정 요청** 시 → ralph-loop 재시작하여 추가 수정 → commit & push → 다시 리뷰
+- **진행** 시 → Phase 7(Refactor)로
+- **중단** 시 → 작업 중지
 
 ### Phase 7: Refactor - 코드 개선
 
@@ -329,9 +459,10 @@ AskUserQuestion:
    ```bash
    gh pr create --draft --title "{task title}" --body "$(cat <<'EOF'
    ## TDD Progress
-   - [x] Red: 실패하는 테스트 작성
-   - [x] Green: 최소 구현
-   - [x] Refactor: 코드 개선
+   - [x] 🔴 Red: 실패하는 테스트 작성
+   - [x] 🟢 Green: 최소 구현
+   - [x] 🎨 Visual Verification: Figma 디자인 매칭 (해당 시)
+   - [x] 🔵 Refactor: 코드 개선
 
    ## 작업 설명
    {task description}
@@ -365,6 +496,12 @@ AskUserQuestion:
 ### Green Phase
 - 변경 파일: {file list with summaries}
 - 커밋: {commit hash} - feat: minimal implementation
+
+### Visual Verification
+- 상태: {완료/건너뜀/부분완료}
+- Story 파일: {path} (해당 시)
+- ralph-loop: {N}회 반복 (해당 시)
+- 커밋: {commit hash} (해당 시)
 
 ### Refactor Phase
 - 리팩토링: {items or "건너뛰기됨"}
@@ -421,6 +558,12 @@ AskUserQuestion:
 | 사용자 중단 | 변경 파일 & PR URL 표시, tdd-session.yaml 유지 (나중에 재개 가능) |
 | 세션 상태 파일 손상 | tdd-session.yaml 삭제 후 처음부터 시작 안내 |
 | 작업 디렉토리에 미커밋 변경 있음 | AskUserQuestion으로 stash / commit / 중단 선택 |
+| Figma 스크린샷 실패 | Visual Verification 건너뛰고 Refactor로 진행 |
+| Storybook/dev server 미감지 | Visual Verification 건너뛰고 Refactor로 진행 |
+| claude-in-chrome 미사용 가능 | Visual Verification 건너뛰고 Refactor로 진행 |
+| ralph-loop 실패 | 수동 1회 비교 후 Refactor로 진행 |
+| Visual 수정으로 테스트 실패 | 수정 revert → 다른 방법 시도 |
+| 최대 5회 반복 후 차이 남음 | 남은 차이 목록과 함께 사용자 결정 요청 |
 
 ## Example
 
@@ -491,7 +634,8 @@ Claude: [Phase 10] PR Ready for Review
 ## 참고
 
 - 이 커맨드는 현재 워크스페이스에서 직접 실행됨 (병렬 워크스페이스 생성 안함)
-- 커밋은 각 phase별로 자동 생성됨 (Red/Green/Refactor)
+- 커밋은 각 phase별로 자동 생성됨 (Red/Green/Visual/Refactor)
 - 세션 중단 후 `/tdd:start`를 다시 실행하면 이전 진행 상태에서 재개 가능
 - Refactor phase는 건너뛸 수 있음 (사소한 수정 시)
 - Refactor 완료 후 Draft PR 생성, 최종 승인 시 Ready for Review로 전환
+- **Visual Verification**: Figma URL과 UI 컴포넌트가 있는 경우 Green 후 Storybook/Preview를 생성하고 ralph-loop으로 Figma와 반복 비교
