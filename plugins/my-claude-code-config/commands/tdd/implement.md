@@ -23,7 +23,7 @@ allowed-tools:
 Workspace 내부 흐름:
 Red      → 테스트 작성 & commit                        → 🔍 Review Gate 1: 인간 리뷰
 Green    → 구현 코드 commit                           → 🔍 Review Gate 2: 인간 리뷰
-Visual   → Figma 비교 & Storybook/Preview (조건부)      → 🔍 Review Gate 2.5: 인간 리뷰
+Visual   → Figma 비교 & Storybook/Preview (Figma URL 있을 시) → 🔍 Review Gate 2.5: 인간 리뷰
 Refactor → 리팩토링 commit & push → Draft PR 생성 → Linear 동기화 → 🔍 Review Gate 3: 최종 리뷰
 최종 승인 → Draft PR → Ready for Review (open)
 ```
@@ -305,21 +305,22 @@ AskUserQuestion:
 
   테스트: {통과}/{전체} (신규 {N}개, 기존 {N}개)
 
-  다음 단계: {Figma URL이 있고 [Presentational] 컴포넌트면 → Visual Verification / 아니면 → Refactor}
+  다음 단계: {Figma URL이 있으면 → Visual Verification / 없으면 → Refactor}
 
   선택: 진행 / 수정 요청 / Refactor 건너뛰기 / 중단"
 ```
 
 - **수정 요청** 시 → 피드백에 따라 구현 수정 → 테스트 재실행 → 커밋 → 다시 Review Gate 2
-- **진행** 시 → Visual Verification 조건 충족 시 Step 2.5로, 미충족 시 Step 3로
+- **진행** 시 → Figma URL이 있으면 Step 2.5로, 없으면 Step 3로
 - **Refactor 건너뛰기** 시 → Draft PR 생성 + Linear 동기화 (상태 "In Review" + PR 코멘트) + `gh pr ready` 실행
 - **중단** 시 → 작업 중지
 
 ---
 
-## Step 2.5: 🎨 VISUAL — `tdd-visual` agent에 위임 (조건부)
+## Step 2.5: 🎨 VISUAL — `tdd-visual` agent에 위임
 
-> Presentational 컴포넌트 + Figma URL이 있는 경우에만 실행. 조건 미충족 시 Step 3으로.
+> **Figma URL이 있으면 반드시 실행한다.** Figma URL이 없는 경우에만 Step 3으로 건너뜀.
+> 에러 발생 시 자동 건너뛰기 금지 — 반드시 AskUserQuestion으로 사용자에게 선택을 요청한다.
 
 ```
 Task(subagent_type: "tdd-visual", prompt: "
@@ -504,10 +505,10 @@ Batch 1 모든 task 완료!
 | Session 시작 실패 | 에러 로그 출력, 수동 재시도 안내 |
 | vk issue 상태 조회 실패 | 에러 로그 + 수동 확인 안내 |
 | 모든 구현 완료 (done) | "모든 배치가 완료되었습니다" 안내 |
-| Figma 스크린샷 실패 | Visual Verification 건너뛰고 Refactor로 진행 |
-| Storybook/dev server 미감지 | Visual Verification 건너뛰고 Refactor로 진행 |
-| claude-in-chrome 미사용 가능 | Visual Verification 건너뛰고 Refactor로 진행 |
-| ralph-loop 실패 | 수동 1회 비교 후 Refactor로 진행 |
+| Figma 스크린샷 실패 | AskUserQuestion: "Figma 캡처 실패. 재시도 / URL 변경 / 건너뛰기" |
+| Storybook/dev server 미감지 | AskUserQuestion: "Preview 환경 미감지. dev server URL 직접 입력 / 건너뛰기" |
+| claude-in-chrome 미사용 가능 | AskUserQuestion: "브라우저 연결 필요. 연결 후 재시도 / 건너뛰기" |
+| ralph-loop 실패 | AskUserQuestion: "ralph-loop 실패. 재시도 / 건너뛰기" |
 | Visual 수정으로 테스트 실패 | 수정 revert → 다른 방법 시도 |
 | 최대 5회 반복 후 차이 남음 | 남은 차이 목록과 함께 사용자 결정 요청 |
 
@@ -595,10 +596,10 @@ Claude:
 
 ## 참고
 
-- **단일 Task, 전체 워크플로우**: 각 issue당 하나의 vk task를 생성하며, Red→Green→Visual Verification(조건부)→Refactor 전체 지시사항을 포함
+- **단일 Task, 전체 워크플로우**: 각 issue당 하나의 vk task를 생성하며, Red→Green→Visual Verification(Figma URL 있을 시 필수)→Refactor 전체 지시사항을 포함
 - **Workspace 자율 실행**: workspace agent가 phase를 자체 관리하고, phase 사이에 AskUserQuestion Review Gate로 인간 리뷰
 - **vk update_issue 없음**: vk task는 한번 생성 후 변경하지 않음 (Linear 동기화는 Refactor 완료 시에만 수행: 상태 "In Review" 전환 + PR 링크 코멘트)
 - **상태 확인 기반 진행**: `/tdd:implement` 재실행 시 vk issue 상태를 확인하여 batch 진행 여부 결정
 - `--base` 파라미터로 implement.yaml의 base_branch를 override 가능
-- 하나의 PR이 전체 TDD 사이클을 포함: Red→Green→Visual Verification(조건부)→Refactor 완료 후 Draft PR 생성, 최종 승인 시 Ready for Review로 전환
-- **Visual Verification**: Figma URL과 Presentational 컴포넌트가 있는 경우 Green 후 Storybook/Preview를 생성하고 ralph-loop으로 Figma와 반복 비교
+- 하나의 PR이 전체 TDD 사이클을 포함: Red→Green→Visual Verification(Figma URL 있을 시 필수)→Refactor 완료 후 Draft PR 생성, 최종 승인 시 Ready for Review로 전환
+- **Visual Verification**: Figma URL이 있으면 Green 후 반드시 실행. Storybook/Preview를 생성하고 ralph-loop으로 Figma와 반복 비교. 에러 시 자동 건너뛰기 없이 사용자 확인 필요.
