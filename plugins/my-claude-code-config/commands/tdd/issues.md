@@ -7,6 +7,7 @@ allowed-tools:
   - Glob
   - ToolSearch
   - AskUserQuestion
+  - Task
 ---
 
 # TDD Issues Command
@@ -57,43 +58,27 @@ allowed-tools:
    - Functional Requirements: Given/When/Then 테스트 케이스
    - Design: domain model, usecases, component tree
 
-### Phase 2: Issue 분류
+### Phase 2: Issue 분류 (tdd-issue-planner agent 위임)
 
-문서 내용을 분석하여 작업 단위를 **Blocker**와 **Related**로 분류한다.
-
-**분류 기준:**
-
-| 유형 | 기준 | 예시 |
-|------|------|------|
-| **Blocker** | 다른 작업의 선행 조건. 이것 없이 진행 불가 | API 설계, 공통 컴포넌트, 공통 interface/상수 정의, 인프라 셋업 |
-| **Related** | 독립적으로 진행 가능. Blocker 완료 후 병렬 작업 | 개별 페이지 구현, 개별 Usecase 구현, 테스트 작성 |
-
-**추출 소스 (Linear TechSpec 문서에서):**
-
-- **Functional Requirements** → Acceptance Criteria 항목별 issue, Given/When/Then 테스트 케이스 그룹
-- **Design** → 데이터 모델(interface) 정의, Usecase 구현, Component 구현, State 설계
-
-**Issue 구조화 패턴:**
+TechSpec 문서를 분석하여 Blocker/Related 분류, 패키지 매핑, issue description 생성을 `tdd-issue-planner` agent에 위임한다.
 
 ```
-[Blocker] 공통 Interface/상수 정의
-[Blocker] API 인터페이스 설계
-[Blocker] 공통 컴포넌트 구현 ({shared components})
-[Related] {PageName} 페이지 구현
+Task(
+  subagent_type: "tdd-issue-planner",
+  prompt: """
+  다음 TechSpec 문서를 분석하여 Blocker/Related issue를 분류하고 description을 생성해주세요.
+
+  ## TechSpec 전체 내용
+  {Linear 문서에서 조회한 전체 내용}
+
+  ## Project Info
+  - project_id: {project.id from meta.yaml}
+  - team: {team from meta.yaml}
+  """
+)
 ```
 
-> **Sub-issue는 생성하지 않는다.** 하위 작업 항목(Usecase, Component 등)은 issue description 내 체크리스트로 포함한다.
-
-**Package/Service 매핑:**
-
-TechSpec Design 섹션의 "Component & Code" 파일 구조에서 작업 대상 패키지를 식별한다:
-
-1. 파일 구조(예: `src/modules/postAd/`)에서 패키지 내 경로 추출
-2. 해당 경로가 속한 패키지 식별 (예: `packages/export-kotisaari-ui`)
-3. 같은 패키지 내 유사 모듈을 참조 패턴으로 지정 (예: `src/modules/advertisementStatus/`)
-4. 모든 issue가 같은 패키지면 한 번만 식별, 다르면 issue별로 매핑
-
-**결과물**: `{ package_name, package_path, target_directory, reference_pattern }`
+**agent 반환 결과**: Blocker/Related issue 목록 (title, description, priority, package 매핑, TC 커버리지)
 
 ### Phase 3: 사용자 확인
 
@@ -140,7 +125,7 @@ list_issue_labels(team: "{team}", name: "tdd")
 > - label 누락 시 전체 TDD 워크플로우가 실패합니다
 > - 절대 생략하지 마세요!
 
-MCP 도구를 로드하고 issue를 생성한다.
+MCP 도구를 로드하고 Phase 2 agent 결과물의 issue 목록을 순서대로 생성한다.
 
 ```
 ToolSearch(query: "select:mcp__plugin_linear_linear__create_issue")
@@ -152,52 +137,7 @@ ToolSearch(query: "select:mcp__plugin_linear_linear__list_issue_labels")
 1. **Blocker issue 먼저 생성**
 2. **Related issue 생성**
 
-**Issue 생성 시 포함할 내용:**
-
-```
-mcp__plugin_linear_linear__create_issue(
-  title: "{issue title}",
-  team: "{team from meta.yaml project}",
-  description: """
-{관련 AC, test cases, design 내용 요약}
-
-## 작업 대상
-
-- **패키지**: `{package_name}` (`{package_path}`)
-- **작업 디렉토리**: `{package_path}/{target_directory}`
-- **기존 패턴 참조**: `{package_path}/{reference_pattern}`
-
-## TDD Workflow (Red-Green-Refactor)
-
-이 issue는 TDD 방식으로 구현합니다.
-
-### 1. 🔴 Red - 실패하는 테스트 작성
-- 위 Given/When/Then 테스트 케이스를 실제 테스트 코드로 작성
-- 테스트 파일은 대상 소스 파일과 같은 디렉토리에 배치 (예: `cart.ts` → `cart.test.ts`)
-- 테스트 실행 → 실패 확인 (구현 전이므로 당연히 실패)
-
-### 2. 🟢 Green - 최소 구현
-- 테스트를 통과시키는 최소한의 코드 작성
-- "동작하는 것"에만 집중, 완벽한 코드 X
-- 테스트 실행 → 성공 확인
-
-### 3. 🔵 Refactor - 리팩토링
-- 테스트가 통과하는 상태에서 코드 품질 개선
-- 중복 제거, 네이밍 개선, 구조 정리
-- 테스트 실행 → 여전히 성공 확인
-
-### Commit 전 필수 체크
-```bash
-npx tsc --noEmit     # Type check
-npx biome check .    # Lint
-npx vitest run       # Test
-```
-""",
-  priority: {blocker=2(High), related=3(Medium)},
-  labels: ["tdd"],  # ⚠️ REQUIRED - 절대 생략 금지! /tdd:implement 연동에 필수
-  project: "{project name or id}"
-)
-```
+**생성 파라미터**: agent가 반환한 각 issue의 title, description, priority를 그대로 사용하되, 반드시 `labels: ["tdd"]`와 `project: "{project id}"` 포함.
 
 ### Phase 4.5: Label 검증 (필수)
 
@@ -218,11 +158,7 @@ list_issues(project: "{project-id}", labels: ["tdd"])
 
 ### Phase 4.7: TC → Issue 커버리지 검증
 
-생성된 이슈들이 TechSpec의 모든 테스트 케이스를 커버하는지 확인한다.
-
-- TechSpec Functional Requirements의 모든 TC 번호가 최소 1개 이슈의 description에 포함되어 있는지 확인
-- 미할당 TC가 있으면 → 가장 관련성 높은 기존 이슈에 추가하거나 새 이슈 생성
-- 결과를 커버리지 요약으로 보고: `TC 커버리지: {covered}/{total} (미할당: #{numbers})`
+Phase 2 agent 결과의 `tc_coverage` 요약을 확인한다. 미할당 TC가 있으면 관련 이슈에 추가하거나 새 이슈를 생성한다.
 
 ### Phase 5: 결과 보고
 

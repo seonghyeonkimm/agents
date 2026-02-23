@@ -12,6 +12,7 @@ allowed-tools:
   - Glob
   - ToolSearch
   - AskUserQuestion
+  - Task
 ---
 
 # TDD Sync Command
@@ -99,102 +100,38 @@ allowed-tools:
    - 현재 batch, 진행 중인 task 파악
    - 이미 구현 완료된 이슈와 진행 중인 이슈 구분
 
-### Phase 3: 갭 분석
+### Phase 3-4: 갭 분석 & 리뷰 보고 (tdd-gap-analyzer agent 위임)
 
-요구사항(Phase 1)을 기존 문서(Phase 2)의 각 레이어와 대조한다.
+요구사항과 기존 문서의 4-layer 대조 분석을 `tdd-gap-analyzer` agent에 위임한다.
 
-**분석 레이어:**
+```
+Task(
+  subagent_type: "tdd-gap-analyzer",
+  prompt: """
+  다음 요구사항을 기존 TDD 산출물과 대조하여 갭 분석을 수행해주세요.
 
-#### 3-1. TechSpec 레이어 (tdd:spec 결과물)
+  ## 요구사항
+  {Phase 1에서 구조화한 REQ-1, REQ-2, ... 목록}
 
-| 체크 항목 | 판단 기준 |
-|----------|----------|
-| Solution 반영 | 요구사항이 Solution의 핵심 변경사항에 포함되어 있는가? |
-| AC 반영 | 요구사항에 대응하는 Acceptance Criteria가 있는가? |
-| TC 반영 | 요구사항에 대응하는 Given/When/Then 테스트 케이스가 있는가? |
-| TC 충분성 | 정상/에러/엣지 케이스가 모두 커버되는가? |
+  ## TechSpec 문서 내용
+  {Phase 2에서 조회한 Linear TechSpec 전문}
 
-#### 3-2. Design 레이어 (tdd:design 결과물)
+  ## Linear 이슈 목록 (있는 경우)
+  {Phase 2에서 조회한 tdd label 이슈 목록}
 
-| 체크 항목 | 판단 기준 |
-|----------|----------|
-| 데이터 모델 | 요구사항에서 참조하는 데이터가 interface에 정의되어 있는가? |
-| Business Rules | 요구사항의 비즈니스 규칙이 BR 목록에 포함되어 있는가? |
-| Usecase | 요구사항의 사용자 행동이 Usecase로 정의되어 있는가? |
-| Component | 요구사항의 UI 변경이 컴포넌트 설계에 반영되어 있는가? |
-| Verification | 요구사항에 대한 테스트가 Verification 섹션에 있는가? |
+  ## Implementation 상태 (있는 경우)
+  {implement.yaml 내용, 없으면 "없음"}
+  """
+)
+```
 
-#### 3-3. Issues 레이어 (tdd:issues 결과물)
+**agent 반환 결과**: 4-layer 반영 상태 테이블 + 제안 액션 목록
 
-| 체크 항목 | 판단 기준 |
-|----------|----------|
-| 이슈 커버리지 | 새 요구사항을 구현할 이슈가 존재하는가? |
-| 이슈 상세 | 기존 이슈의 description에 변경된 요구사항이 반영되어 있는가? |
-
-#### 3-4. Implementation 레이어 (tdd:implement 결과물, 있는 경우)
-
-| 체크 항목 | 판단 기준 |
-|----------|----------|
-| 완료된 이슈 충돌 | 이미 구현 완료된 이슈에 영향을 주는 변경인가? |
-| 진행 중 이슈 영향 | 현재 진행 중인 이슈의 요구사항이 변경되었는가? |
-
-**분류 결과:**
-
-각 요구사항-문서 조합에 대해 상태를 부여한다:
-
-| 상태 | 의미 |
-|------|------|
-| `OK` | 이미 반영됨 |
-| `MISSING` | 문서에 해당 내용이 없음 (추가 필요) |
-| `OUTDATED` | 문서에 있으나 요구사항과 불일치 (수정 필요) |
-| `CONFLICT` | 이미 구현 완료된 부분과 충돌 (주의 필요) |
-
-### Phase 4: 리뷰 보고
-
-갭 분석 결과를 AskUserQuestion으로 보고한다:
+agent 결과를 AskUserQuestion으로 사용자에게 보고한다:
 
 ```
 AskUserQuestion:
-  question: "요구사항 반영 상태를 분석했습니다.
-
-  ## 요구사항 목록
-  - REQ-1: {요구사항 설명}
-  - REQ-2: {요구사항 설명}
-
-  ## 반영 상태
-
-  ### TechSpec (tdd:spec)
-  | 요구사항 | Solution | AC | TC | 상태 |
-  |---------|---------|-----|-----|------|
-  | REQ-1 | OK | OK | MISSING | 테스트 케이스 추가 필요 |
-  | REQ-2 | MISSING | MISSING | MISSING | 전체 추가 필요 |
-
-  ### Design (tdd:design)
-  | 요구사항 | Data Model | BR | Usecase | Component | 상태 |
-  |---------|-----------|-----|---------|-----------|------|
-  | REQ-1 | OK | OK | OK | MISSING | 컴포넌트 설계 추가 필요 |
-
-  ### Issues (tdd:issues)
-  | 요구사항 | 관련 이슈 | 상태 |
-  |---------|---------|------|
-  | REQ-1 | PROJ-5 | OUTDATED (description 업데이트 필요) |
-  | REQ-2 | - | MISSING (새 이슈 필요) |
-
-  ### Implementation 영향 (tdd:implement)
-  | 이슈 | 구현 상태 | 영향 |
-  |------|---------|------|
-  | PROJ-3 | completed | CONFLICT (변경 필요, 별도 이슈 권장) |
-
-  ---
-
-  ## 제안 액션
-
-  1. [TechSpec] REQ-1 테스트 케이스 추가: {구체적 내용}
-  2. [TechSpec] REQ-2 전체 섹션 추가: {구체적 내용}
-  3. [Design] REQ-1 컴포넌트 설계 보완: {구체적 내용}
-  4. [Issue] PROJ-5 description 업데이트: {구체적 내용}
-  5. [Issue] REQ-2 새 이슈 생성: {구체적 내용}
-  6. [Warning] PROJ-3 이미 구현 완료 — 별도 수정 이슈 필요
+  question: "{agent가 반환한 반영 상태 + 제안 액션}
 
   선택: 전체 승인 / 부분 승인 (번호 지정) / 수정 요청 / 중단"
 ```

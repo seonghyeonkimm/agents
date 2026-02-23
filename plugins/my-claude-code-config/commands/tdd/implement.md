@@ -214,7 +214,7 @@ Linear issue description의 "작업 대상" 섹션에서 패키지 정보를 추
 
 ## 통합 Task Description 템플릿
 
-하나의 task에 Red→Green→Refactor 전체 워크플로우를 포함한다. 각 Step 완료 후 Review Gate에서 AskUserQuestion으로 인간 리뷰를 받고, 승인 후 다음 Step으로 진행한다.
+하나의 task에 Red→Green→Visual→Refactor 전체 워크플로우를 포함한다. Workspace agent는 전문 agent에 위임하여 각 phase를 실행하고, Review Gate에서 AskUserQuestion으로 인간 리뷰를 받는다.
 
 ````
 🚫 **금지 사항 — 아래 규칙을 반드시 준수하세요:**
@@ -242,37 +242,22 @@ Linear issue description의 "작업 대상" 섹션에서 패키지 정보를 추
 
 ---
 
-## Step 1: 🔴 RED — 실패하는 테스트 작성
+## Step 1: 🔴 RED — `tdd-red` agent에 위임
 
-이 Step의 목표는 **테스트만** 작성하고 **커밋**하는 것입니다.
-구현 코드를 작성하지 마세요.
-
-### 작업 순서
-
-1. `{base_branch}`에서 브랜치 생성 (이름 규칙: issue title 기반 kebab-case)
-2. Given/When/Then 테스트 케이스를 실제 테스트 코드로 변환
-   - ⚠️ `describe`/`it`/`test` 설명은 **한국어**로 작성
-   - ⚠️ TC#, TC1 등 번호 접두사를 붙이지 않음 — 설명만 작성
-   - ⚠️ UI 렌더링 자체를 검증하는 테스트는 지양. **사용자 행동**(클릭, 입력 등)과 그 **결과**(핸들러 호출, 상태 변경, 다른 컴포넌트 노출)를 검증하는 통합 테스트 위주로 작성
-   - ❌ `it('RecommendCreateAd를 렌더링한다')` → ✅ `it('광고가 없을 때 클릭하면 onCreateAd가 호출된다')`
-   - 예: `describe('PostAdListItem')`, `it('광고가 0개일 때 광고 생성 유도 영역을 클릭하면 onCreateAd가 호출된다')`
-   - ⚠️ 테스트 파일은 대상 소스 파일과 **같은 디렉토리**에 생성 (예: `cart.ts` → `cart.test.ts`). `__tests__/` 디렉토리를 새로 만들지 않음. 단, 프로젝트에 기존 `__tests__/` 컨벤션이 확립되어 있으면 기존 따름.
-   - ⚠️ 각 테스트의 assertion은 테스트 대상의 출력/상태/부수효과를 **직접 검증**해야 함
-   - ❌ `expect(true).toBe(false)`, `expect(1).toBe(2)` 등 placeholder assertion
-   - ✅ `expect(result.error).toBeDefined()`, `expect(onSubmit).toHaveBeenCalledWith(...)`
-   - ⚠️ mocking은 최소화. 외부 API, 타이머 등 **제어 불가능한 의존성**만 mock하고, 가능하다면 의존성 주입(DI)을 통해 실제 구현을 활용
-     - 예: DB 대신 in-memory repository 주입, API client 대신 fake client 주입
-3. 테스트 실행 → **실패 확인** (Red 상태)
-4. 커밋
-
-### 완료 조건
-
-- [ ] 테스트 파일이 존재함
-- [ ] 테스트 실행 시 실패함 (구현이 없으므로)
+```
+Task(subagent_type: "tdd-red", prompt: "
+  ## Context
+  - test_cases: {위 '관련 테스트 케이스' 전체}
+  - target_files: {위 '관련 설계'에서 파일 경로}
+  - branch_name: {issue title 기반 kebab-case}
+  - base_branch: {base_branch}
+  - existing_test_patterns: {package_path}/{reference_pattern} 참조
+")
+```
 
 ### 🔍 Review Gate 1
 
-**반드시 여기서 멈추고 AskUserQuestion으로 인간에게 리뷰를 요청하세요.**
+agent 완료 후, **반드시 여기서 멈추고 AskUserQuestion으로 인간에게 리뷰를 요청하세요.**
 
 ```
 AskUserQuestion:
@@ -281,9 +266,6 @@ AskUserQuestion:
   브랜치: {branch_name}
   테스트 파일: {파일 경로 목록}
   실패하는 테스트: {N}개
-  테스트 목록:
-  - {it/test 설명 1} (TC #{번호})
-  - {it/test 설명 2} (TC #{번호})
 
   리뷰 포인트:
   - 테스트 이름이 구현이 아닌 행동을 설명하는가?
@@ -295,35 +277,24 @@ AskUserQuestion:
 
 - **수정 요청** 시 → 피드백에 따라 테스트 수정 → 커밋 → 다시 Review Gate 1
 - **진행** 시 → Step 2로
-- **중단** 시 → 작업 중지 (현재 상태 유지)
+- **중단** 시 → 작업 중지
 
 ---
 
-## Step 2: 🟢 GREEN — 테스트 통과시키기
+## Step 2: 🟢 GREEN — `tdd-green` agent에 위임
 
-이 Step의 목표는 기존 테스트를 통과시키는 **최소한의 코드**를 작성하는 것입니다.
-과도한 추상화나 리팩토링을 하지 마세요.
-
-### 작업 순서
-
-1. 기존 테스트 코드 확인
-2. 테스트를 통과시키는 **최소한의** 코드 작성
-   - 조기 최적화 금지
-   - 테스트에 없는 케이스 처리 금지
-   - 리팩토링이나 코드 정리 금지
-   - 필요 이상의 추상화 금지
-3. 테스트 실행 → **성공 확인** (Green 상태)
-4. 커밋
-
-### 완료 조건
-
-- [ ] 해당 패키지의 **전체** 테스트 통과 (새 테스트만이 아님)
-- [ ] 기존 테스트 회귀 없음 (전체 테스트 수/통과 수 보고)
-- [ ] 최소한의 구현만 포함 (no gold plating)
+```
+Task(subagent_type: "tdd-green", prompt: "
+  ## Context
+  - test_files: {Step 1에서 생성된 테스트 파일 경로}
+  - failing_tests: {실패한 테스트 목록}
+  - target_files: {관련 설계에서 파일 경로}
+")
+```
 
 ### 🔍 Review Gate 2
 
-**반드시 여기서 멈추고 AskUserQuestion으로 인간에게 리뷰를 요청하세요.**
+agent 완료 후, **반드시 여기서 멈추고 AskUserQuestion으로 인간에게 리뷰를 요청하세요.**
 
 ```
 AskUserQuestion:
@@ -333,10 +304,6 @@ AskUserQuestion:
   - {file} - {변경 요약}
 
   테스트: {통과}/{전체} (신규 {N}개, 기존 {N}개)
-
-  리뷰 포인트:
-  - 구현이 정말 최소한인가? (불필요한 추상화 없는가?)
-  - 기존 테스트 회귀가 없는가?
 
   다음 단계: {Figma URL이 있고 [Presentational] 컴포넌트면 → Visual Verification / 아니면 → Refactor}
 
@@ -350,173 +317,60 @@ AskUserQuestion:
 
 ---
 
-## Step 2.5: 🎨 VISUAL VERIFICATION — Figma 디자인 매칭 (조건부)
+## Step 2.5: 🎨 VISUAL — `tdd-visual` agent에 위임 (조건부)
 
-> 이 Step은 **Presentational 컴포넌트 작업 + Figma URL이 있는 경우**에만 실행됩니다.
-> 조건 미충족 시 "Visual Verification 건너뜀" 로그 출력 후 Step 3으로 진행하세요.
+> Presentational 컴포넌트 + Figma URL이 있는 경우에만 실행. 조건 미충족 시 Step 3으로.
 
-### 진입 조건
-
-1. 위 "관련 설계"에 `[Presentational]` 컴포넌트가 포함되어 있는가?
-2. Context의 **Figma URL**이 null이 아닌가?
-3. 프로젝트에 Storybook (`Glob("**/.storybook")`) 또는 dev server가 있는가?
-
-**하나라도 미충족** → "Visual Verification 조건 미충족 (사유: {미충족 항목}). Step 3으로 진행합니다." 출력 후 Step 3으로.
-
-### 작업 순서
-
-1. **Preview 환경 준비**:
-
-   **Storybook 감지:**
-   ```
-   Glob("**/.storybook") 또는 package.json에 "@storybook/*" 의존성
-   ```
-
-   Storybook 존재 시:
-   - 구현한 Presentational 컴포넌트와 같은 디렉토리에 `{Component}.stories.tsx` 생성
-   - 기존 `.stories.*` 파일의 CSF 버전(CSF2/CSF3)을 확인하여 동일 형식 사용
-   - Visual Contract의 각 State (default, loading, empty, error 등)를 개별 story로 작성
-   - Step 1 테스트에서 사용한 mock data를 활용하여 Props 주입
-
-   Storybook 미존재 시:
-   - 프로젝트 라우팅에 맞는 preview 페이지 생성 (예: `app/dev/preview/{component}/page.tsx`)
-
-2. **Figma 참조 이미지 캡처**:
-   ```
-   ToolSearch(query: "select:mcp__claude_ai_Figma__get_screenshot")
-   → Figma URL에서 fileKey, nodeId 추출
-   → mcp__claude_ai_Figma__get_screenshot(fileKey: "{key}", nodeId: "{id}")
-   ```
-   - nodeId가 URL에 없으면 `get_metadata`로 프레임 목록 조회 후 AskUserQuestion으로 선택
-
-3. **ralph-loop로 반복 비교 & 수정**:
-   ```
-   Skill(skill: "ralph-loop:ralph-loop")
-   ```
-
-   ralph-loop을 사용할 수 없으면 수동으로 1회 비교 후 진행.
-
-   각 iteration에서:
-   a. 브라우저에서 Storybook/preview 페이지 스크린샷 캡처
-      ```
-      ToolSearch(query: "select:mcp__claude-in-chrome__tabs_context_mcp")
-      → tabs_context_mcp(createIfEmpty: true)
-      → navigate(url: "{preview_url}", tabId: {tabId})
-      → computer(action: "screenshot", tabId: {tabId})
-      ```
-   b. Figma 스크린샷과 구현 스크린샷 비교 분석 (레이아웃, 색상, 타이포그래피, 간격)
-   c. 차이점 수정 (CSS, 레이아웃, 디자인 토큰)
-   d. 테스트 실행 → Green 유지 확인 (깨지면 revert 후 다른 방법 시도)
-   e. 수렴 시 또는 최대 5회 도달 시 → ralph-loop 종료
-
-4. **커밋**
-
-### 완료 조건
-
-- [ ] Storybook story 또는 preview 페이지가 생성됨
-- [ ] Figma 디자인과 구현의 주요 레이아웃/색상/타이포그래피가 일치
-- [ ] 모든 테스트 여전히 통과 (Green 유지)
+```
+Task(subagent_type: "tdd-visual", prompt: "
+  ## Context
+  - figma_url: {Context의 Figma URL}
+  - components: {관련 설계의 [Presentational] 컴포넌트 목록}
+  - visual_contract: {관련 설계의 Visual Contract 정보}
+  - test_mock_data: {Step 1 테스트의 mock data}
+")
+```
 
 ### 🔍 Review Gate 2.5
 
-**반드시 여기서 멈추고 AskUserQuestion으로 인간에게 리뷰를 요청하세요.**
+agent 완료 후, **반드시 여기서 멈추고 AskUserQuestion으로 인간에게 리뷰를 요청하세요.**
 
 ```
 AskUserQuestion:
   question: "🎨 Visual Verification 완료.
 
   비교 결과:
-  - {component}: Figma 매칭 상태 (✅ 일치 / ⚠️ 잔여 차이: {목록})
-
-  생성된 파일:
-  - {story/preview file path}
+  - {component}: Figma 매칭 상태
 
   ralph-loop: {N}회 반복
 
   선택: 진행 (Refactor로) / 수정 요청 / 중단"
 ```
 
-- **수정 요청** 시 → ralph-loop 재시작하여 추가 수정 → 커밋 → 다시 Review Gate 2.5
+- **수정 요청** 시 → 추가 수정 → 커밋 → 다시 Review Gate 2.5
 - **진행** 시 → Step 3로
 - **중단** 시 → 작업 중지
 
 ---
 
-## Step 3: 🔵 REFACTOR — 리팩토링
-
-이 Step의 목표는 코드 품질을 개선하는 것입니다.
-
-### 작업 순서
-
-1. 코드 품질 개선 (중복 제거, 네이밍, 구조 개선)
-2. Business Rules에 해당하는 반복 로직은 `entity-object-pattern` 스킬을 참조하여 Entity Object로 그룹화
-3. 테스트 실행 → **여전히 성공** 확인
-4. Pre-commit 체크:
-   ```bash
-   # 1. Type check
-   npx tsc --noEmit
-
-   # 2. Biome check
-   npx biome check .
-
-   # 3. Test
-   npx vitest run
-   ```
-   실패 시 수정 후 재실행. 모두 통과해야 commit 가능.
-5. 커밋 & 푸시 (첫 push):
-   ```bash
-   git add {changed-files}
-   git commit -m "refactor: improve code quality for {task summary}"
-   git push -u origin {branch-name}
-   ```
-6. Draft PR 생성:
-   ```bash
-   gh pr create --draft --base {base_branch} \
-     --title "{issue title}" \
-     --body "$(cat <<'EOF'
-   ## TDD Progress
-   - [x] 🔴 Red: 실패하는 테스트 작성
-   - [x] 🟢 Green: 최소 구현
-   - [x] 🎨 Visual Verification: Figma 디자인 매칭 (해당 시)
-   - [x] 🔵 Refactor: 코드 개선
-
-   ## Covered Test Cases
-   - #{TC numbers from TechSpec}
-
-   ### 리뷰 포인트
-   - [ ] 테스트 케이스가 요구사항을 정확히 반영하는가?
-   - [ ] 구현이 테스트 요구사항을 올바르게 충족하는가?
-   - [ ] 코드 구조와 네이밍이 적절한가?
-   EOF
-   )"
-   ```
-
-   ⚠️ **중요**: `--base {base_branch}` 플래그 필수! `main`을 base로 사용하면 안 됩니다!
-
-### Linear 동기화
+## Step 3: 🔵 REFACTOR — `tdd-refactor` agent에 위임
 
 ```
-ToolSearch(query: "select:mcp__plugin_linear_linear__update_issue")
-# "In Review" 상태 ID 확인: list_issue_statuses(team: "{your-team}")에서
-# "In Review" name을 가진 상태의 id 사용
-update_issue(id: "{issue_id}", stateId: "{in-review-state-id}")
-
-ToolSearch(query: "select:mcp__plugin_linear_linear__create_comment")
-create_comment(issueId: "{issue_id}", body: "🔵 Refactor 완료 - 최종 리뷰: {pr_url}")
+Task(subagent_type: "tdd-refactor", prompt: "
+  ## Context
+  - source_files: {Step 2에서 변경된 소스 파일}
+  - test_files: {Step 1에서 생성된 테스트 파일}
+  - branch_name: {현재 브랜치}
+  - task_summary: {issue title}
+  - base_branch: {base_branch}
+  - test_cases_summary: {관련 테스트 케이스 요약}
+  - linear_issue_id: {issue_id}
+")
 ```
-
-> Note: "Done" 상태는 PR이 merge된 후 별도로 처리됩니다.
-
-### 완료 조건
-
-- [ ] 모든 테스트 통과
-- [ ] tsc, biome 통과
-- [ ] 브랜치에 push됨
-- [ ] Draft PR 생성됨
 
 ### 🔍 Review Gate 3
 
-**반드시 여기서 멈추고 AskUserQuestion으로 인간에게 최종 리뷰를 요청하세요.**
+agent 완료 후, **반드시 여기서 멈추고 AskUserQuestion으로 인간에게 최종 리뷰를 요청하세요.**
 
 ```
 AskUserQuestion:
@@ -525,11 +379,7 @@ AskUserQuestion:
   PR: {pr_url}
   tsc: ✅ 통과
   biome: ✅ 통과
-  테스트: {통과}/{전체} (신규 {N}개, 기존 {N}개)
-
-  리뷰 포인트:
-  - 공개 API(export 함수 시그니처, Props interface)가 변경되었는가?
-  - Refactor 범위가 적절한가?
+  테스트: {통과}/{전체}
 
   선택: 승인 (PR을 Ready for Review로 전환) / 수정 요청"
 ```
