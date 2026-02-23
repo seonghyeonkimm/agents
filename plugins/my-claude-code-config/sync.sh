@@ -386,6 +386,34 @@ do_diff() {
     fi
   done
 
+  # Agents (dynamic discovery from both sides)
+  local all_agents=()
+  if ls "$CLAUDE_HOME/agents/"*.md 1>/dev/null 2>&1; then
+    for f in "$CLAUDE_HOME/agents/"*.md; do all_agents+=("$(basename "$f")"); done
+  fi
+  if ls "$SCRIPT_DIR/agents/"*.md 1>/dev/null 2>&1; then
+    for f in "$SCRIPT_DIR/agents/"*.md; do all_agents+=("$(basename "$f")"); done
+  fi
+  mapfile -t all_agents < <(printf '%s\n' "${all_agents[@]}" | sort -u)
+  for name in "${all_agents[@]}"; do
+    local_file="$CLAUDE_HOME/agents/$name"
+    repo_file="$SCRIPT_DIR/agents/$name"
+    if [ ! -f "$local_file" ]; then
+      log_diff "agents/$name: only in repo"
+      has_diff=true
+    elif [ ! -f "$repo_file" ]; then
+      log_diff "agents/$name: only in local"
+      has_diff=true
+    elif ! diff -q "$local_file" "$repo_file" >/dev/null 2>&1; then
+      log_diff "agents/$name: differs"
+      diff --color=auto "$repo_file" "$local_file" 2>/dev/null || true
+      echo ""
+      has_diff=true
+    else
+      log_ok "agents/$name: in sync"
+    fi
+  done
+
   # Rules (dynamic discovery from both sides)
   local all_rules=()
   if ls "$CLAUDE_HOME/rules/"*.md 1>/dev/null 2>&1; then

@@ -8,6 +8,7 @@ allowed-tools:
   - Glob
   - ToolSearch
   - AskUserQuestion
+  - Task
 ---
 
 # TDD Design Command
@@ -40,193 +41,32 @@ allowed-tools:
    - 문서 내용에서 **Functional Requirements (Given/When/Then)** 섹션 추출
    - `get_document` 도구가 없으면, 사용자에게 Linear URL을 안내하고 수동 확인 요청
 
-### Phase 2: 데이터 모델(Interface) & Usecase 추출
+### Phase 2-3: 설계 (tdd-designer agent 위임)
 
-Linear TechSpec 문서의 **Functional Requirements (Given/When/Then)** 섹션을 분석하여:
+데이터 모델, Business Rules, Usecase, Component, Visual Contract 설계를 `tdd-designer` agent에 위임한다.
 
-1. **데이터 모델 정의 (Interface 레이어)**:
-   - 테스트 케이스의 Given/Then에서 참조하는 데이터를 식별
-   - API 응답 모델을 기반으로 interface를 정의 → 컴포넌트는 이 interface에만 의존
-   - 대부분 API 타입을 참조하면 충분. 별도 클라이언트 Entity는 정말 필요한 경우에만 추가
-   - 별도 Entity가 필요한 경우: 여러 API 응답 조합, 클라이언트 고유 상태, API와 다른 구조
-   - enum/상수값은 별도 정의 가능
+```
+Task(
+  subagent_type: "tdd-designer",
+  prompt: """
+  다음 TechSpec 문서를 분석하여 Domain Model + Client Architecture를 설계해주세요.
 
-2. **Domain Usecase 정의**:
-   - 테스트 케이스의 When에서 사용자 행동/이벤트를 Usecase로 변환
-   - 각 Usecase의 input/output 정의
-   - **컴포넌트 렌더링 분기(단순 if/else)는 Usecase에서 제외** — 컴포넌트 내부 책임
-   - Usecase가 참조하는 데이터 매핑
+  ## TechSpec Functional Requirements
+  {Linear 문서에서 추출한 Given/When/Then 섹션 전문}
 
-**출력 형식:**
+  ## Figma URL (있는 경우)
+  {meta.yaml의 sources.figma 값, 없으면 "없음"}
 
-```markdown
-## Domain Model
-
-### 데이터 모델
-
-| 데이터 | 출처 | 주요 필드 | interface 전략 |
-|--------|------|----------|---------------|
-| {데이터명} | API response | `{field1}`, `{field2}` | API 타입 참조 |
-| {데이터명} | 클라이언트 조합 | `{field1}`, `{field2}` | 별도 정의 (사유: 여러 API 조합) |
-
-### Usecases
-
-#### {UsecaseName}
-- **Actor**: {who triggers}
-- **Input**: {input params}
-- **Output**: {output/side effects}
-- **데이터 참조**: {related data}
-- **Test Cases**: #{test case numbers}
+  ## 기존 Design 섹션 (업데이트 시)
+  {기존 Design 내용, 최초 생성이면 "없음"}
+  """
+)
 ```
 
-### Phase 2.5: Usecase ← TC 커버리지 검증
-
-Usecase 추출 후 TC와의 대응 관계를 검증한다.
-
-- TC의 모든 고유한 **When 액션**이 Usecase에 매핑되는지 확인
-- 매핑되지 않는 When → Usecase를 추가하거나, 기존 Usecase의 scope를 확장
-- Usecase가 참조하는 TC 번호가 실제 Functional Requirements에 존재하는지 확인
-
-### Phase 2.7: Business Rules 추출
-
-테스트 케이스에서 반복 등장하는 비즈니스 규칙을 자연어로 식별한다.
-⚠️ 함수명/시그니처/의존성 구조는 설계하지 않는다. 구현 시 TDD Refactor 단계에서 `entity-object-pattern` 스킬을 참조하여 결정.
-
-**추출 기준:**
-
-- 2곳 이상에서 참조되는 규칙만 추출
-- 컴포넌트의 단순 렌더링 분기(예: "데이터가 0건이면 empty view 노출")는 비즈니스 규칙이 아님 — 해당 컴포넌트의 렌더링 책임
-- "상태 조건", "행동 제약"처럼 여러 컴포넌트/API/테스트에서 반복되는 로직만 대상
-
-**추출 프로세스:**
-
-1. **Given에서 상태 조건 식별**: "~인 상태", "~가 설정된" 등에서 도메인 제약 추출
-2. **When에서 행동 제약 식별**: "시도하면 실패", "수정 불가" 등에서 행동 가능 조건 추출
-3. **Then에서 결과 규칙 식별**: 파생 값, 조건부 UI 동작 등 추출
-4. **참조 횟수 검증**: 추출한 규칙이 2곳 이상에서 사용되는지 확인. 1곳만이면 제외
-
-**출력 형식:**
-
-```markdown
-### Business Rules
-
-⚠️ 테스트 케이스에서 비즈니스 규칙을 자연어로 추출. 함수명/시그니처는 구현 시 결정.
-⚠️ 2곳 이상에서 참조되는 규칙만 기록. 단일 컴포넌트 렌더링 분기는 제외.
-
-| Rule ID | 참조 지점 | 규칙 유형 | 규칙 설명 | # |
-|---------|----------|----------|----------|-----|
-| BR-1 | {ComponentA, ComponentB} | 상태 조건 | {자연어 설명} | #1,#2 |
-| BR-2 | {UI, API request} | 행동 제약 | {자연어 설명} | #3 |
-```
-
-### Phase 3: Client Component & State 설계
-
-Linear TechSpec의 테스트 케이스 + Figma 디자인 (meta.yaml의 sources.figma가 있는 경우)을 기반으로:
-
-**컴포넌트 유형 분류:**
-
-| 유형 | 역할 | 판별 기준 |
-|------|------|----------|
-| **Container** | Usecase 연결, 서버 상태 관리, 데이터 가공 후 하위 전달 | Usecase를 호출하거나, 서버 상태(React Query 등)를 구독하거나, 여러 데이터를 조합하여 하위에 전달 |
-| **Presentational** | Props 기반 순수 UI 렌더링, 사용자 인터랙션 콜백 위임 | Props와 콜백만으로 동작, 외부 상태 구독 없음, 독립적으로 렌더링 가능 |
-
-- Usecase를 직접 호출하거나 서버 상태를 구독하면 → Container
-- Props/콜백만 받아 렌더링하면 → Presentational
-- 하나의 컴포넌트가 두 역할을 겸하면 → Container + Presentational로 분리 검토
-
-1. **Figma 컨텍스트 로드** (URL이 있는 경우):
-   ```
-   ToolSearch(query: "select:mcp__claude_ai_Figma__get_design_context")
-   → 각 화면/프레임별로 호출하여 추출:
-     - 컴포넌트 계층 구조 및 네이밍
-     - 레이아웃 패턴 (flex/grid, direction, gap)
-     - 조건부 UI 요소 (visible/hidden 토글)
-     - 상태 변형 (variants: default, hover, disabled, loading 등)
-
-   ToolSearch(query: "select:mcp__claude_ai_Figma__get_variable_defs")
-   → 1회 호출하여 사용되는 디자인 토큰 목록 수집 (colors, spacing, typography)
-   ```
-
-   **Figma가 없는 경우 (Fallback)**:
-   - Given 조건에서 visual states 도출 (loading, empty, error, disabled 등)
-   - When 행동에서 interaction 패턴 도출 (click, swipe, input 등)
-   - Then 결과에서 visual change 도출 (show/hide, navigate, update 등)
-
-2. **Component Tree 설계**:
-   - 페이지/화면 단위로 컴포넌트 계층 정의
-   - 각 컴포넌트의 Props interface
-   - 재사용 가능한 공통 컴포넌트 식별
-
-3. **State 설계**:
-   - Interface 데이터 → Client State 매핑
-   - 서버 상태 vs 클라이언트 상태 구분
-   - State management 방식 결정
-
-**출력 형식:**
-
-```markdown
-## Client Architecture
-
-### Component Tree (렌더링 계층)
-
-⚠️ 아래는 렌더링 관계(부모→자식)를 나타냄. 파일 위치는 "파일 배치 가이드" 참조.
-
-{FeatureName}
-├── {ContainerA} [Container] → {UsecaseX, UsecaseY}
-│   ├── {ComponentA} [Presentational]
-│   └── {ComponentB} [Presentational]
-└── {ContainerB} [Container] → {UsecaseZ}
-    └── {ComponentC} [Presentational]
-
-### 파일 배치 가이드
-
-프로젝트 구조에 따라 다를 수 있으나, 일반적인 원칙:
-- **Presentational (공용)**: 여러 도메인에서 재사용 → `src/components/` 등 공용 경로
-- **Presentational (도메인 전용)**: 특정 도메인에서만 사용 → 해당 도메인 하위
-- **Container**: 연결하는 Usecase가 속한 도메인 하위
-
-### Component Specs
-
-> 📐 Design Tokens (Figma 기반, 없으면 생략)
-> - Colors: {token: value}, ...
-> - Spacing: {token: value}, ...
-> - Typography: {token: value}, ...
-
-#### {ContainerComponentName} [Container]
-- **Usecase**: {connected usecase(s)}
-- **데이터 흐름**: {서버 상태 → 가공 → Props로 하위 전달}
-- **State**: { state: type } (서버 상태 구독, 클라이언트 상태)
-- **하위 컴포넌트**: {Presentational 컴포넌트 목록}
-
-#### {PresentationalComponentName} [Presentational]
-- **Props**: { prop: type }
-- **Callbacks**: { onAction: (params) => void }
-- **Visual Contract**:
-  - **Layout**: {layout 패턴, e.g., "Flex column, gap 8px" / "Grid 3-col (auto 1fr auto)"}
-  - **States**:
-    | State | Condition | Description |
-    |-------|-----------|-------------|
-    | default | - | {기본 렌더링} |
-    | loading | isLoading | {skeleton/spinner, 인터랙션 비활성화} |
-    | empty | items.length === 0 | {빈 화면 + CTA} |
-    | error | error !== null | {에러 메시지 + 재시도} |
-  - **Interactions**: {핵심 인터랙션, e.g., "스와이프 삭제", "300ms debounce"}
-
-### State Design
-
-#### Server State (React Query / SWR)
-- {query key}: {description}
-
-#### Client State
-- {state name}: {description}
-```
-
-⚠️ **Visual Contract 작성 규칙:**
-- Figma 컨텍스트가 있으면 layout, states, interactions를 Figma에서 추출
-- Figma가 없으면 테스트 케이스 Given/When/Then에서 도출
-- **Container 컴포넌트는 Visual Contract를 작성하지 않음** — 데이터 흐름과 Usecase 연결만 기술
-- **Presentational 컴포넌트만 Visual Contract 작성** — Props/Callbacks 기반 렌더링 계약
-- States 테이블은 해당 컴포넌트에 실제 존재하는 상태만 기록 (모든 상태를 채울 필요 없음)
+**agent 반환 결과**: 아래 섹션이 포함된 마크다운
+- `## Design` (데이터 모델, Business Rules, Usecase, Component & Visual Contract, Usecase-Component Integration)
+- `## Component & Code - Client`
+- `## Verification`
 
 ### Phase 4: Linear 문서 업데이트
 

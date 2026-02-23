@@ -15,6 +15,7 @@ allowed-tools:
   - AskUserQuestion
   - ToolSearch
   - Skill
+  - Task
 ---
 
 # TDD Start Command
@@ -220,37 +221,22 @@ updated_at: "2026-02-11T10:00:00Z"
    - 변경사항이 있으면 AskUserQuestion: "커밋되지 않은 변경이 있습니다. stash / commit / 중단 중 선택하세요"
    - stash 선택 시 `git stash push -m "tdd-start: before {task}"`
 
-1. Phase 2에서 설계한 테스트 케이스를 실제 테스트 코드로 변환
-   - ⚠️ `describe`/`it`/`test` 설명은 **한국어**로 작성
-   - ⚠️ TC#, TC1 등 번호 접두사를 붙이지 않음 — 설명만 작성
-   - ⚠️ UI 렌더링 자체를 검증하는 테스트는 지양. **사용자 행동**과 그 **결과**를 검증하는 통합 테스트 위주로 작성
-   - 예: `describe('CartPage')`, `it('장바구니에서 삭제 버튼을 클릭하면 해당 상품이 제거된다')`
-   - ⚠️ 각 테스트의 assertion은 테스트 대상의 출력/상태/부수효과를 **직접 검증**해야 함
-   - ❌ `expect(true).toBe(false)`, `expect(1).toBe(2)` 등 placeholder assertion
-   - ✅ `expect(result.error).toBeDefined()`, `expect(onSubmit).toHaveBeenCalledWith(...)`
-2. 테스트 파일은 대상 소스 파일과 **같은 디렉토리**에 생성 (예: `src/domain/cart.ts` → `src/domain/cart.test.ts`)
-   - `__tests__/` 디렉토리를 새로 만들지 않음
-   - 단, 프로젝트에 이미 `__tests__/` 컨벤션이 확립되어 있으면 기존 컨벤션을 따름
-3. 테스트 실행 → **실패 확인**
-   - ⚠️ import 에러나 syntax 에러가 아닌 **assertion 실패**여야 함
-   - import 에러가 발생하면 import/mock 설정을 수정하여 assertion 실패 상태로 맞춤
-   - ⚠️ mocking은 최소화. 외부 API, 타이머 등 **제어 불가능한 의존성**만 mock하고, 가능하다면 의존성 주입(DI)을 통해 실제 구현을 활용
-     - 예: DB 대신 in-memory repository 주입, API client 대신 fake client 주입
+1. **`tdd-red` agent에 위임**:
 
-4. **branch 생성 & commit**:
-
-   **Branch 이름 규칙:**
-   - 버그 수정: `fix/{task-keywords}` (예: `fix/cart-negative-quantity`)
-   - 기능 추가: `feat/{task-keywords}` (예: `feat/add-wishlist-button`)
-   - task keywords는 project_name과 동일한 kebab-case 사용
-
-   ```bash
-   git checkout -b {branch-name}
-   git add {test-files}
-   git commit -m "test: add failing tests for {task summary}"
+   ```
+   Task(subagent_type: "tdd-red", prompt: "
+     ## Context
+     - test_cases: {Phase 2에서 설계한 Given/When/Then TC 목록}
+     - target_files: {Phase 2에서 식별한 대상 소스 파일 경로}
+     - branch_name: {branch 이름} (규칙: 버그 fix/{keywords}, 기능 feat/{keywords})
+     - test_framework: {Phase 1에서 감지한 프레임워크}
+     - existing_test_patterns: {Phase 1에서 파악한 기존 테스트 패턴 요약}
+   ")
    ```
 
-5. **세션 상태 업데이트**: phase → "red", branch, test_files, commits.red 기록
+2. agent 결과에서 test_files, branch, commit, failing_tests 수집
+
+3. **세션 상태 업데이트**: phase → "red", branch, test_files, commits.red 기록
 
 ### Phase 4: (Human) Red 리뷰
 
@@ -276,28 +262,20 @@ AskUserQuestion:
 
 ### Phase 5: Green - 최소 구현
 
-1. 테스트를 통과시키는 **최소한의 코드**만 작성
+1. **`tdd-green` agent에 위임**:
 
-2. **의도적으로 피할 것:**
-   - 조기 최적화
-   - 테스트에 없는 케이스 처리
-   - 리팩토링이나 코드 정리
-   - 필요 이상의 추상화
-
-3. 대상 테스트 실행 → 통과 확인
-4. 해당 패키지의 **전체** 테스트 실행 → 회귀 없음 확인 (전체 테스트 수/통과 수 보고)
-5. 타입 체크 실행 (해당 시):
-   ```bash
-   npx tsc --noEmit  # 또는 프로젝트에 맞는 타입 체커
+   ```
+   Task(subagent_type: "tdd-green", prompt: "
+     ## Context
+     - test_files: {Phase 3에서 생성된 테스트 파일 경로}
+     - failing_tests: {실패한 테스트 목록}
+     - target_files: {Phase 2에서 식별한 대상 소스 파일 경로}
+   ")
    ```
 
-6. **commit**:
-   ```bash
-   git add {changed-files}
-   git commit -m "feat: minimal implementation for {task summary}"
-   ```
+2. agent 결과에서 source_files, test_result, commit 수집
 
-7. **세션 상태 업데이트**: phase → "green", source_files, commits.green 기록
+3. **세션 상태 업데이트**: phase → "green", source_files, commits.green 기록
 
 ### Phase 6: (Human) Green 리뷰
 
@@ -329,79 +307,23 @@ AskUserQuestion:
 > 이 Phase는 **UI 컴포넌트 작업 + Figma URL이 있는 경우**에만 실행된다.
 > 조건 미충족 시 자동으로 Phase 7(Refactor)로 건너뜀.
 
-**진입 조건 확인:**
-1. Phase 2 설계에 UI 컴포넌트(Presentational)가 포함되어 있는가?
-2. Phase 1에서 Figma URL이 수집되었는가? (`visual_verification.figma_url`이 null이 아닌가?)
-3. 프로젝트에 Storybook (`Glob("**/.storybook")`) 또는 dev server가 있는가?
+1. **`tdd-visual` agent에 위임**:
 
-하나라도 미충족 시: "Visual Verification 조건 미충족 (사유: {미충족 항목}). Refactor로 진행합니다." 출력 후 Phase 7로 이동.
-
-**작업 순서:**
-
-1. **Preview 환경 준비**:
-
-   **Storybook 감지:**
    ```
-   Glob("**/.storybook") 또는 package.json에 "@storybook/*" 의존성
-   ```
-   - 감지됨 → 컴포넌트와 같은 디렉토리에 `{Component}.stories.tsx` 생성
-     - 기존 `.stories.*` 파일의 CSF 버전(CSF2/CSF3)을 확인하여 동일 형식 사용
-   - 감지 안됨 → 프로젝트 라우팅에 맞는 preview 페이지 생성 (예: `app/dev/preview/{component}/page.tsx`)
-
-   **Story/Preview 파일 구성:**
-   - Phase 2 설계의 각 Presentational 컴포넌트에 대해 story 작성
-   - Visual Contract의 모든 States (default, loading, empty, error 등)를 각각 story로 생성
-   - 테스트에서 사용한 mock data를 활용하여 Props 주입
-
-2. **Figma 참조 이미지 캡처**:
-   ```
-   ToolSearch(query: "select:mcp__claude_ai_Figma__get_screenshot")
-   → Figma URL에서 fileKey, nodeId 추출
-   → mcp__claude_ai_Figma__get_screenshot(fileKey: "{key}", nodeId: "{id}")
-   ```
-   - nodeId가 URL에 없으면 `get_metadata`로 프레임 목록 조회 후 AskUserQuestion으로 선택
-
-3. **ralph-loop 시작 — 반복 비교 & 수정**:
-   ```
-   Skill(skill: "ralph-loop:ralph-loop")
+   Task(subagent_type: "tdd-visual", prompt: "
+     ## Context
+     - figma_url: {Phase 1에서 수집한 Figma URL}
+     - components: {Phase 2에서 식별한 Presentational 컴포넌트 이름 목록}
+     - visual_contract: {Phase 2 설계의 Visual Contract 정보}
+     - test_mock_data: {Phase 3 테스트에서 사용한 mock data}
+   ")
    ```
 
-   ralph-loop을 사용할 수 없으면 수동으로 1회 비교 후 진행.
+2. agent 결과 확인:
+   - 조건 미충족으로 건너뜀 → Phase 7(Refactor)로 이동
+   - 완료 → story_files, iterations, match_status, commit 수집
 
-   ralph-loop 내 각 iteration에서:
-
-   a. **구현 스크린샷 캡처**:
-      ```
-      ToolSearch(query: "select:mcp__claude-in-chrome__tabs_context_mcp")
-      → tabs_context_mcp(createIfEmpty: true)
-      → navigate(url: "{storybook_url 또는 preview_url}", tabId: {tabId})
-      → computer(action: "screenshot", tabId: {tabId})
-      ```
-
-   b. **Figma vs 구현 비교 분석**:
-      - 레이아웃 차이 (여백, 정렬, 크기)
-      - 색상/타이포그래피 차이
-      - 컴포넌트 상태별 렌더링 차이
-
-   c. **차이점 수정**:
-      - CSS/스타일 코드 수정
-      - 레이아웃 구조 조정
-      - 디자인 토큰 적용
-
-   d. **테스트 실행 → 여전히 Green 확인**
-      - 기존 테스트가 깨지면 수정 revert 후 다른 방법 시도
-
-   e. **수렴 판단**:
-      - 주요 차이가 해소되었으면 → ralph-loop 종료
-      - 최대 5회 반복 후에도 차이가 남으면 → 남은 차이 목록과 함께 종료
-
-4. **commit**:
-   ```bash
-   git add {changed-files} {story-files}
-   git commit -m "style: visual verification - match Figma design for {component}"
-   ```
-
-5. **세션 상태 업데이트**: phase → "visual", visual_verification 섹션 업데이트 (story_files, iterations, status), commits.visual 기록
+3. **세션 상태 업데이트**: phase → "visual", visual_verification 섹션 업데이트 (story_files, iterations, status), commits.visual 기록
 
 ### Phase 5.6: (Human) Visual Verification 리뷰
 
@@ -426,53 +348,23 @@ AskUserQuestion:
 
 ### Phase 7: Refactor - 코드 개선
 
-1. **리팩토링 기준** (우선순위):
-   - 중복 제거
-   - 네이밍 개선
-   - 구조 정리 (파일/모듈 위치)
-   - 단순화 (불필요한 복잡도 제거)
-   - 프로젝트 컨벤션 정렬
+1. **`tdd-refactor` agent에 위임**:
 
-2. 각 리팩토링 단계마다 테스트 재실행 → **녹색 유지 확인**
-
-3. 최종 품질 체크 (프로젝트에서 감지된 도구 사용):
-   ```bash
-   # 타입 체크 (해당 시)
-   npx tsc --noEmit
-
-   # 린트 (해당 시)
-   npx biome check .  # 또는 npx eslint .
-
-   # 전체 테스트
-   npx vitest run  # 또는 npx jest, pytest 등
+   ```
+   Task(subagent_type: "tdd-refactor", prompt: "
+     ## Context
+     - source_files: {Phase 5에서 변경된 소스 파일 목록}
+     - test_files: {Phase 3에서 생성된 테스트 파일 목록}
+     - branch_name: {현재 작업 브랜치}
+     - task_summary: {작업 설명}
+     - base_branch: {현재 브랜치의 base (기본: main)}
+     - test_cases_summary: {Phase 2의 Given/When/Then TC 요약}
+   ")
    ```
 
-4. **commit & push** (첫 push):
-   ```bash
-   git add {changed-files}
-   git commit -m "refactor: improve code quality for {task summary}"
-   git push -u origin {branch-name}
-   ```
+2. agent 결과에서 pr_url, pr_number, precommit_result, refactoring_summary, commit 수집
 
-5. **Draft PR 생성**:
-   ```bash
-   gh pr create --draft --title "{task title}" --body "$(cat <<'EOF'
-   ## TDD Progress
-   - [x] 🔴 Red: 실패하는 테스트 작성
-   - [x] 🟢 Green: 최소 구현
-   - [x] 🎨 Visual Verification: Figma 디자인 매칭 (해당 시)
-   - [x] 🔵 Refactor: 코드 개선
-
-   ## 작업 설명
-   {task description}
-
-   ## 테스트 케이스
-   {Given/When/Then list from Phase 2}
-   EOF
-   )"
-   ```
-
-6. **세션 상태 업데이트**: phase → "refactor", pr 정보, commits.refactor 기록
+3. **세션 상태 업데이트**: phase → "refactor", pr 정보, commits.refactor 기록
 
 ### Phase 8: 최종 보고
 
