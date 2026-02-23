@@ -164,8 +164,8 @@ updated_at: "2026-02-11T10:00:00Z"
 
    **Figma URL 확인:**
    - 작업 설명에 Figma URL (`figma.com` 포함)이 포함되어 있으면 추출하여 저장
-   - 없으면 AskUserQuestion: "Figma 디자인 URL이 있나요? (UI 작업이 아니면 비워두세요)"
-   - 비어있으면 `null`로 저장 (Visual Verification 비활성화)
+   - 없으면 AskUserQuestion: "Figma 디자인 URL을 입력하세요. (Visual Verification에 사용됩니다. UI 작업이 아닌 경우 '없음'이라고 답해주세요)"
+   - '없음' 응답 시 `null`로 저장 (Visual Verification 비활성화)
 
 3. **스코프 판단**: 10개 이상의 테스트 케이스가 필요하거나 다수 모듈에 걸치는 작업이면 AskUserQuestion으로 heavyweight flow 추천
 
@@ -293,19 +293,19 @@ AskUserQuestion:
   - 구현이 정말 최소한인가? (불필요한 추상화 없는가?)
   - 기존 테스트 회귀가 없는가?
 
-  다음 단계: {Figma URL이 있고 UI 컴포넌트면 → Visual Verification / 아니면 → Refactor}
+  다음 단계: {Figma URL이 있으면 → Visual Verification / 없으면 → Refactor}
 
   선택: 진행 / 수정 요청 / Refactor 건너뛰기 / 중단"
 ```
 
 - 수정 요청 시 → 구현 수정 → 테스트 재실행 → commit → 다시 리뷰 (루프)
-- **진행** 시 → Visual Verification 조건 충족 시 Phase 5.5로, 미충족 시 Phase 7(Refactor)로
+- **진행** 시 → Figma URL이 있으면 Phase 5.5로, 없으면 Phase 7(Refactor)로
 - **Refactor 건너뛰기** 선택 시 → Draft PR 생성 + `gh pr ready` 실행 후 Phase 8로 직행
 
-### Phase 5.5: (조건부) Visual Verification — Figma 디자인 매칭
+### Phase 5.5: Visual Verification — Figma 디자인 매칭
 
-> 이 Phase는 **UI 컴포넌트 작업 + Figma URL이 있는 경우**에만 실행된다.
-> 조건 미충족 시 자동으로 Phase 7(Refactor)로 건너뜀.
+> **Figma URL이 있으면 반드시 실행한다.** Figma URL이 없는 경우에만 Phase 7(Refactor)로 건너뜀.
+> 에러 발생 시 자동 건너뛰기 금지 — 반드시 AskUserQuestion으로 사용자에게 선택을 요청한다.
 
 1. **`tdd-visual` agent에 위임**:
 
@@ -320,7 +320,7 @@ AskUserQuestion:
    ```
 
 2. agent 결과 확인:
-   - 조건 미충족으로 건너뜀 → Phase 7(Refactor)로 이동
+   - Figma URL 미제공으로 건너뜀 → Phase 7(Refactor)로 이동
    - 완료 → story_files, iterations, match_status, commit 수집
 
 3. **세션 상태 업데이트**: phase → "visual", visual_verification 섹션 업데이트 (story_files, iterations, status), commits.visual 기록
@@ -449,10 +449,10 @@ AskUserQuestion:
 | 사용자 중단 | 변경 파일 & PR URL 표시, tdd-session.yaml 유지 (나중에 재개 가능) |
 | 세션 상태 파일 손상 | tdd-session.yaml 삭제 후 처음부터 시작 안내 |
 | 작업 디렉토리에 미커밋 변경 있음 | AskUserQuestion으로 stash / commit / 중단 선택 |
-| Figma 스크린샷 실패 | Visual Verification 건너뛰고 Refactor로 진행 |
-| Storybook/dev server 미감지 | Visual Verification 건너뛰고 Refactor로 진행 |
-| claude-in-chrome 미사용 가능 | Visual Verification 건너뛰고 Refactor로 진행 |
-| ralph-loop 실패 | 수동 1회 비교 후 Refactor로 진행 |
+| Figma 스크린샷 실패 | AskUserQuestion: "Figma 캡처 실패. 재시도 / URL 변경 / 건너뛰기" |
+| Storybook/dev server 미감지 | AskUserQuestion: "Preview 환경 미감지. dev server URL 직접 입력 / 건너뛰기" |
+| claude-in-chrome 미사용 가능 | AskUserQuestion: "브라우저 연결 필요. 연결 후 재시도 / 건너뛰기" |
+| ralph-loop 실패 | AskUserQuestion: "ralph-loop 실패. 재시도 / 건너뛰기" |
 | Visual 수정으로 테스트 실패 | 수정 revert → 다른 방법 시도 |
 | 최대 5회 반복 후 차이 남음 | 남은 차이 목록과 함께 사용자 결정 요청 |
 
@@ -529,4 +529,4 @@ Claude: [Phase 10] PR Ready for Review
 - 세션 중단 후 `/tdd:start`를 다시 실행하면 이전 진행 상태에서 재개 가능
 - Refactor phase는 건너뛸 수 있음 (사소한 수정 시)
 - Refactor 완료 후 Draft PR 생성, 최종 승인 시 Ready for Review로 전환
-- **Visual Verification**: Figma URL과 UI 컴포넌트가 있는 경우 Green 후 Storybook/Preview를 생성하고 ralph-loop으로 Figma와 반복 비교
+- **Visual Verification**: Figma URL이 있으면 Green 후 반드시 실행. Storybook/Preview를 생성하고 ralph-loop으로 Figma와 반복 비교. 에러 시 자동 건너뛰기 없이 사용자 확인 필요.
