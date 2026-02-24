@@ -88,10 +88,9 @@ AskUserQuestion:
 
 a. **구현 스크린샷 캡처**:
    ```
-   ToolSearch(query: "select:mcp__claude-in-chrome__tabs_context_mcp")
-   → tabs_context_mcp(createIfEmpty: true)
-   → navigate(url: "{storybook_url 또는 preview_url}", tabId: {tabId})
-   → computer(action: "screenshot", tabId: {tabId})
+   ToolSearch(query: "select:mcp__playwright__browser_navigate")
+   → browser_navigate(url: "{storybook_url 또는 preview_url}")
+   → browser_take_screenshot()
    ```
 
 b. **Figma vs 구현 비교 분석**: 레이아웃, 색상, 타이포그래피, 간격
