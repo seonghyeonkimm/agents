@@ -507,7 +507,7 @@ Batch 1 모든 task 완료!
 | 모든 구현 완료 (done) | "모든 배치가 완료되었습니다" 안내 |
 | Figma 스크린샷 실패 | AskUserQuestion: "Figma 캡처 실패. 재시도 / URL 변경 / 건너뛰기" |
 | Storybook/dev server 미감지 | AskUserQuestion: "Preview 환경 미감지. dev server URL 직접 입력 / 건너뛰기" |
-| claude-in-chrome 미사용 가능 | AskUserQuestion: "브라우저 연결 필요. 연결 후 재시도 / 건너뛰기" |
+| Playwright 브라우저 실행 실패 | AskUserQuestion: "브라우저를 실행할 수 없습니다. 재시도 / 건너뛰기" |
 | ralph-loop 실패 | AskUserQuestion: "ralph-loop 실패. 재시도 / 건너뛰기" |
 | Visual 수정으로 테스트 실패 | 수정 revert → 다른 방법 시도 |
 | 최대 5회 반복 후 차이 남음 | 남은 차이 목록과 함께 사용자 결정 요청 |
