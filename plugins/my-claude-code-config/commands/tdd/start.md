@@ -449,12 +449,7 @@ AskUserQuestion:
 | 사용자 중단 | 변경 파일 & PR URL 표시, tdd-session.yaml 유지 (나중에 재개 가능) |
 | 세션 상태 파일 손상 | tdd-session.yaml 삭제 후 처음부터 시작 안내 |
 | 작업 디렉토리에 미커밋 변경 있음 | AskUserQuestion으로 stash / commit / 중단 선택 |
-| Figma 스크린샷 실패 | AskUserQuestion: "Figma 캡처 실패. 재시도 / URL 변경 / 건너뛰기" |
-| Storybook/dev server 미감지 | AskUserQuestion: "Preview 환경 미감지. dev server URL 직접 입력 / 건너뛰기" |
-| Playwright 브라우저 실행 실패 | AskUserQuestion: "브라우저를 실행할 수 없습니다. 재시도 / 건너뛰기" |
-| ralph-loop 실패 | AskUserQuestion: "ralph-loop 실패. 재시도 / 건너뛰기" |
-| Visual 수정으로 테스트 실패 | 수정 revert → 다른 방법 시도 |
-| 최대 5회 반복 후 차이 남음 | 남은 차이 목록과 함께 사용자 결정 요청 |
+| Visual Verification 에러 | tdd-visual agent가 자체 처리 (AskUserQuestion으로 사용자 확인) |
 
 ## Example
 
@@ -522,11 +517,3 @@ Claude: [Phase 10] PR Ready for Review
   TDD 세션이 정리되었습니다.
 ```
 
-## 참고
-
-- 이 커맨드는 현재 워크스페이스에서 직접 실행됨 (병렬 워크스페이스 생성 안함)
-- 커밋은 각 phase별로 자동 생성됨 (Red/Green/Visual/Refactor)
-- 세션 중단 후 `/tdd:start`를 다시 실행하면 이전 진행 상태에서 재개 가능
-- Refactor phase는 건너뛸 수 있음 (사소한 수정 시)
-- Refactor 완료 후 Draft PR 생성, 최종 승인 시 Ready for Review로 전환
-- **Visual Verification**: Figma URL이 있으면 Green 후 반드시 실행. Storybook/Preview를 생성하고 ralph-loop으로 Figma와 반복 비교. 에러 시 자동 건너뛰기 없이 사용자 확인 필요.

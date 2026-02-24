@@ -244,10 +244,6 @@ TechSpec: {document URL}
 2. 새 이슈가 있다면 /tdd:implement 로 구현을 시작하세요
 ```
 
-### Phase 8: (Human) Review
-
-사용자가 Linear에서 업데이트된 문서와 이슈를 리뷰하고 내용이 올바른지 확인한다.
-
 ## Error Handling
 
 | 상황 | 대응 |
