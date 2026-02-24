@@ -190,20 +190,6 @@ Total: {total}개 issues
 - 또는 Linear에서 담당자 배정 후 수동 TDD 진행
 ```
 
-### Phase 6: /tdd:implement 연동
-
-/tdd:implement는 다음과 같이 issues 생성 여부를 확인한다:
-
-1. meta.yaml에서 project.id 읽기
-2. Linear 조회: `list_issues(project: "{project-id}", labels: ["tdd"])`
-3. "tdd" label issue 존재 여부 확인
-   - 있음 → 구현 진행
-   - 없음 → "/tdd:issues 먼저 실행하세요" 안내
-
-### Phase 7: (Human) Review
-
-사용자가 Linear에서 생성된 issue를 리뷰하고 담당자를 배정한다.
-
 ## Error Handling
 
 | 상황 | 대응 |

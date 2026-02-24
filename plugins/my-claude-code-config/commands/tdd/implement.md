@@ -505,101 +505,37 @@ Batch 1 모든 task 완료!
 | Session 시작 실패 | 에러 로그 출력, 수동 재시도 안내 |
 | vk issue 상태 조회 실패 | 에러 로그 + 수동 확인 안내 |
 | 모든 구현 완료 (done) | "모든 배치가 완료되었습니다" 안내 |
-| Figma 스크린샷 실패 | AskUserQuestion: "Figma 캡처 실패. 재시도 / URL 변경 / 건너뛰기" |
-| Storybook/dev server 미감지 | AskUserQuestion: "Preview 환경 미감지. dev server URL 직접 입력 / 건너뛰기" |
-| Playwright 브라우저 실행 실패 | AskUserQuestion: "브라우저를 실행할 수 없습니다. 재시도 / 건너뛰기" |
-| ralph-loop 실패 | AskUserQuestion: "ralph-loop 실패. 재시도 / 건너뛰기" |
-| Visual 수정으로 테스트 실패 | 수정 revert → 다른 방법 시도 |
-| 최대 5회 반복 후 차이 남음 | 남은 차이 목록과 함께 사용자 결정 요청 |
+| Visual Verification 에러 | tdd-visual agent가 자체 처리 (AskUserQuestion으로 사용자 확인) |
 
-## Example: 첫 실행 → Batch 1 task 생성
+## Example: 첫 실행
 
 ```
 사용자: /tdd:implement
 
-Claude: .claude/docs/my-feature/meta.yaml 에서 project.id를 로드합니다...
-Claude: implement.yaml이 없습니다. 첫 실행입니다.
-Claude: Linear에서 "tdd" label issue를 조회합니다...
-  → Linear issues (3 blockers, 2 related)
-
-Claude: [AskUserQuestion] 이 implementation의 base branch를 지정하세요.
-  현재 git branch: feature/new-cart
-  추천: feature/new-cart
-
+Claude: [AskUserQuestion] base branch를 지정하세요. (추천: feature/new-cart)
 사용자: feature/new-cart
 
-Claude: [AskUserQuestion] 이 feature에 참여할 repo를 선택하세요.
-
+Claude: [AskUserQuestion] 참여 repo를 선택하세요.
 사용자: Frontend, Backend API
 
-Claude: [AskUserQuestion] 다음을 실행합니다:
-
-  Batch 1 (Red→Green→Refactor, 각 phase 후 리뷰)
+Claude: [AskUserQuestion] Batch 1 실행:
   - [Backend] Cart Interface 및 상수 정의
   - [Frontend] Cart UI Component
-  - [Backend] Cart API 엔드포인트
-
 사용자: 진행
 
-Claude: Vibe Kanban에 task 생성 중... (3개 tasks, 전체 TDD 워크플로우 포함)
-Claude: Workspace session 시작 중...
-
-Claude:
-  Batch 1 시작
-
-  Project: my-feature
-  TechSpec: https://linear.app/daangn/document/fe-techspec-xxx
-  Repos: Frontend, Backend API
-  Base Branch: feature/new-cart
-
-  워크스페이스:
-  - [Backend] Cart Interface 및 상수 정의 → task 생성 + session 시작
-  - [Frontend] Cart UI Component → task 생성 + session 시작
-  - [Backend] Cart API 엔드포인트 → task 생성 + session 시작
-
-  각 워크스페이스가 Red→Green→Refactor를 순차 처리합니다.
-  각 Phase 완료 시 Review Gate에서 리뷰 요청이 옵니다.
+Claude: task 생성 + session 시작 완료. 각 workspace가 Red→Green→Refactor를 순차 처리합니다.
 ```
 
-## Example: 재실행 → 상태 확인 → Batch 2 시작
+## Example: 재실행
 
 ```
 사용자: /tdd:implement
 
-Claude: .claude/docs/my-feature/implement.yaml 을 발견했습니다.
-Claude: Batch 1 상태 확인 중...
-  vk issue 상태 조회:
-  - Cart Interface 및 상수 정의 → completed ✅
-  - Cart UI Component → completed ✅
-  - Cart API 엔드포인트 → completed ✅
-
-Claude: Batch 1 모든 task 완료!
-
-Claude: [AskUserQuestion] Batch 2를 시작할까요?
-
-  Batch 2 (Red→Green→Refactor, 각 phase 후 리뷰)
+Claude: Batch 1 상태: 모든 task completed ✅
+Claude: [AskUserQuestion] Batch 2 시작할까요?
   - [Frontend] Wishlist 저장 기능
   - [Backend] Cart 미니 뷰
-
 사용자: 진행
 
-Claude: Vibe Kanban에 task 생성 중... (2개 tasks)
-Claude: Workspace session 시작 중...
-
-Claude:
-  Batch 2 시작
-
-  워크스페이스:
-  - [Frontend] Wishlist 저장 기능 → task 생성 + session 시작
-  - [Backend] Cart 미니 뷰 → task 생성 + session 시작
+Claude: task 생성 + session 시작 완료.
 ```
-
-## 참고
-
-- **단일 Task, 전체 워크플로우**: 각 issue당 하나의 vk task를 생성하며, Red→Green→Visual Verification(Figma URL 있을 시 필수)→Refactor 전체 지시사항을 포함
-- **Workspace 자율 실행**: workspace agent가 phase를 자체 관리하고, phase 사이에 AskUserQuestion Review Gate로 인간 리뷰
-- **vk update_issue 없음**: vk task는 한번 생성 후 변경하지 않음 (Linear 동기화는 Refactor 완료 시에만 수행: 상태 "In Review" 전환 + PR 링크 코멘트)
-- **상태 확인 기반 진행**: `/tdd:implement` 재실행 시 vk issue 상태를 확인하여 batch 진행 여부 결정
-- `--base` 파라미터로 implement.yaml의 base_branch를 override 가능
-- 하나의 PR이 전체 TDD 사이클을 포함: Red→Green→Visual Verification(Figma URL 있을 시 필수)→Refactor 완료 후 Draft PR 생성, 최종 승인 시 Ready for Review로 전환
-- **Visual Verification**: Figma URL이 있으면 Green 후 반드시 실행. Storybook/Preview를 생성하고 ralph-loop으로 Figma와 반복 비교. 에러 시 자동 건너뛰기 없이 사용자 확인 필요.

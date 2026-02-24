@@ -82,51 +82,7 @@ ToolSearch(query: "select:mcp__plugin_linear_linear__update_document")
   )
 ```
 
-**추가되는 섹션:**
-
-```markdown
-## Design
-
-### 1. 데이터 모델
-API 기반 interface 정의. 별도 클라이언트 Entity는 사유 필요.
-
-### 2. Business Rules
-비즈니스 규칙 목록 (2곳 이상 참조되는 규칙만)
-
-### 3. Usecase
-Input → Output 테이블
-
-### 4. Component & Visual Contract
-컴포넌트 계층 설계. Container(Usecase 연결)와 Presentational(순수 UI) 분리.
-- Container: Usecase, 데이터 흐름, State
-- Presentational: Props, Callbacks, Visual Contract
-
-### 5. Usecase-Component Integration
-연결 지점 테이블
-
-## Component & Code - Client
-Test cases 기반으로 module, usecase, 컴포넌트 구조 추출
-
-## Verification
-
-⚠️ Integration Test 최우선.
-
-### Integration Tests (필수)
-
-⚠️ UI 렌더링 자체("~가 렌더링된다")보다 사용자 행동(클릭, 입력)과 그 결과(핸들러 호출, 상태 변경)를 검증.
-
-| # | 테스트 명 | 검증 내용 |
-|---|----------|----------|
-| 1 | {테스트명} | {검증 내용} |
-
-### Unit Tests (필요 시)
-
-복잡한 파생 상태 로직만 대상.
-
-### E2E Tests (필요 시)
-
-전체 사용자 플로우 검증.
-```
+tdd-designer agent가 반환한 마크다운(Design, Component & Code, Verification 섹션)을 Linear 문서에 그대로 업데이트한다.
 
 ### Phase 5: 결과 보고
 
@@ -150,10 +106,6 @@ Linear Document: {document URL} (Design 섹션 업데이트됨)
 1. Linear에서 설계를 리뷰하세요
 2. /tdd:issues 로 Linear 이슈를 생성하세요
 ```
-
-### Phase 6: (Human) Review
-
-사용자가 Linear에서 도메인 모델과 컴포넌트 설계를 리뷰한다.
 
 ## Error Handling
 
