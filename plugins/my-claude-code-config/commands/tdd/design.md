@@ -41,6 +41,25 @@ allowed-tools:
    - 문서 내용에서 **Functional Requirements (Given/When/Then)** 섹션 추출
    - `get_document` 도구가 없으면, 사용자에게 Linear URL을 안내하고 수동 확인 요청
 
+### Phase 1.5: 설계 초안 수집 (필수)
+
+tdd-designer agent에 위임하기 전에 인간의 설계 초안을 수집한다. 초안이 제공될 때까지 Phase 2-3으로 진행하지 않는다.
+
+```
+AskUserQuestion:
+  question: "설계 초안을 공유해주세요. 이 초안을 기반으로 설계를 발전시킵니다.
+
+  예시 형식:
+  ### 핵심 결정
+  - 컴포넌트: CartPage → CartList + CartItem으로 분리
+  - 데이터: 기존 useCartQuery 훅 재사용
+
+  ### 열린 질문
+  - 수량 변경 UI를 인라인으로 할지 모달로 할지?
+
+  자유 형식도 괜찮습니다."
+```
+
 ### Phase 2-3: 설계 (tdd-designer agent 위임)
 
 데이터 모델, Business Rules, Usecase, Component, Visual Contract 설계를 `tdd-designer` agent에 위임한다.
@@ -49,7 +68,10 @@ allowed-tools:
 Task(
   subagent_type: "tdd-designer",
   prompt: """
-  다음 TechSpec 문서를 분석하여 Domain Model + Client Architecture를 설계해주세요.
+  다음 설계 초안과 TechSpec을 기반으로 Domain Model + Client Architecture를 설계해주세요.
+
+  ## 설계 초안 (인간 제공, 필수)
+  {Phase 1.5에서 수집한 인간의 설계 초안}
 
   ## TechSpec Functional Requirements
   {Linear 문서에서 추출한 Given/When/Then 섹션 전문}
@@ -128,7 +150,19 @@ Claude: .claude/docs/에서 메타데이터 파일을 찾고 있습니다...
 Claude: Linear에서 TechSpec 문서를 조회합니다...
   → document.id: abc123
 
-Claude: 테스트 케이스를 분석하여 데이터 모델과 비즈니스 규칙을 추출합니다...
+Claude: 설계 초안을 공유해주세요. 이 초안을 기반으로 설계를 발전시킵니다.
+  [AskUserQuestion]
+
+사용자:
+  ### 핵심 결정
+  - 컴포넌트: CartPage → CartContainer + CartList + CartItem으로 분리
+  - 데이터: 기존 useCartQuery 훅 재사용, CartData는 API 타입 참조
+  - 상태: React Query로 서버 상태, 수량 편집은 로컬 useState
+
+  ### 열린 질문
+  - QuantitySelector를 공용 컴포넌트로 뺄지 도메인 전용으로 둘지?
+
+Claude: 초안을 기반으로 TC와 교차 검증하며 설계합니다...
 
 Claude: Design 완료!
   Domain Model:
@@ -140,6 +174,11 @@ Claude: Design 완료!
   - Pages: CartPage
   - Components: 8개
   - Shared: Button, QuantitySelector
+
+  초안 반영:
+  - 반영: CartContainer/CartList/CartItem 분리, useCartQuery 재사용, React Query + useState
+  - 충돌: 없음
+  - 열린 질문 → 제안: QuantitySelector는 다른 도메인에서도 재사용 가능하므로 공용 추천
 
   Linear Document: https://linear.app/daangn/document/fe-techspec-xxx (Design 섹션 추가됨)
 ```
