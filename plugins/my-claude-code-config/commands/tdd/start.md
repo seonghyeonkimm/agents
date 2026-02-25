@@ -66,6 +66,11 @@ pr:
   url: "https://github.com/org/repo/pull/42"
 phase: "plan"  # plan | red | green | visual | refactor | done
 design:
+  human_draft: |
+    ### 핵심 결정
+    - src/domain/cart.ts의 addItem()에 validation 추가
+    ### 열린 질문
+    - 에러 타입을 ValidationError로 할지 RangeError로 할지?
   test_cases:
     - "Given 수량 -1 / When 장바구니 추가 / Then 에러"
   approach:
@@ -184,23 +189,54 @@ updated_at: "2026-02-11T10:00:00Z"
    - 영향 범위 파악 (어떤 파일/모듈에 영향)
    - 관련 코드 읽기 (Grep/Read로 현재 구현 확인)
 
-2. **테스트 케이스 설계** (← `/tdd:spec`의 경량 버전):
+2. **설계 초안 수집 (필수)**:
+
+   문제 분석 결과를 공유한 뒤 인간의 설계 초안을 요청한다. 초안이 제공될 때까지 TC 설계로 진행하지 않는다.
+
+   ```
+   AskUserQuestion:
+     question: "문제를 분석했습니다.
+
+     ## 문제 분석
+     {문제 요약}
+
+     구현 방향에 대한 설계 초안을 공유해주세요.
+     (컴포넌트 구조, 데이터 흐름, 기술 선택 등)
+
+     예시:
+     ### 핵심 결정
+     - 컴포넌트: ...
+     - 데이터: ...
+     ### 열린 질문
+     - ...?
+
+     자유 형식도 괜찮습니다."
+   ```
+
+3. **테스트 케이스 설계** (← `/tdd:spec`의 경량 버전):
    - Given/When/Then 형식으로 테스트 케이스 목록 작성
    - 정상 → 에러 → 엣지 케이스 순서로 나열
+   - **초안의 핵심 결정을 TC 설계에 반영**
 
-3. **구현 접근 방식** (← `/tdd:design`의 경량 버전):
+4. **구현 접근 방식** (← `/tdd:design`의 경량 버전):
    - 어떤 파일을 수정/생성할지
    - 어떤 함수/컴포넌트를 변경할지
    - 주의할 점 (부작용, 호환성 등)
+   - **초안의 기술 결정을 구현 접근에 반영**
+   - **초안과 TC 분석이 충돌하면 충돌 사항을 기록**
 
-4. **세션 상태 업데이트**: design 섹션에 테스트 케이스 & 구현 접근 기록
+5. **세션 상태 업데이트**: design 섹션에 테스트 케이스 & 구현 접근 & 초안 반영 기록
 
-5. **AskUserQuestion으로 설계 리뷰 요청**:
+6. **AskUserQuestion으로 설계 리뷰 요청**:
    ```
    question: "분석 & 설계가 완료되었습니다.
 
-   ## 문제 분석
-   {문제 요약}
+   ## 초안 반영
+   - 반영: {반영된 결정}
+   - 충돌: {충돌 사항 + 권장안} (없으면 생략)
+
+   ## 열린 질문 → 제안
+   - Q: {인간의 질문} → A: {제안 + 근거} (없으면 생략)
 
    ## 테스트 케이스
    1. Given {조건} / When {행동} / Then {결과}
@@ -461,10 +497,29 @@ Claude: 프로젝트 컨텍스트를 수집합니다...
   린터: biome
   타입 체커: tsc
 
-Claude: [Phase 2] 분석 & 설계
+Claude: [Phase 2] 문제를 분석했습니다.
 
   ## 문제 분석
   Cart.addItem()에서 수량 validation이 없어 음수 입력이 가능
+
+  구현 방향에 대한 설계 초안을 공유해주세요.
+  [AskUserQuestion]
+
+사용자:
+  ### 핵심 결정
+  - src/domain/cart.ts의 addItem()에 수량 validation 추가
+  - ValidationError를 던지도록 처리
+  ### 열린 질문
+  - 수량 0도 에러로 처리해야 하는지?
+
+Claude: [Phase 2 계속] 분석 & 설계가 완료되었습니다.
+
+  ## 초안 반영
+  - 반영: addItem()에 validation 추가, ValidationError 사용
+
+  ## 열린 질문 → 제안
+  - Q: 수량 0도 에러로 처리해야 하는지?
+    → A: 장바구니에 수량 0인 아이템은 의미 없으므로 에러 처리 권장
 
   ## 테스트 케이스
   1. Given 수량 -1 / When addItem / Then ValidationError
@@ -474,7 +529,7 @@ Claude: [Phase 2] 분석 & 설계
   ## 구현 접근
   - src/domain/cart.ts: addItem()에 수량 > 0 validation 추가
 
-  [AskUserQuestion] 선택: 진행 / 수정 요청 / 중단
+  선택: 진행 / 수정 요청 / 중단
 
 사용자: 진행
 
