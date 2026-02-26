@@ -103,8 +103,14 @@ ToolSearch(query: "select:mcp__claude_ai_Figma__get_screenshot")
 
 ### 3. ralph-loop 반복 비교 & 수정
 
+playwright-cli로 Preview URL을 브라우저에서 열어둔다:
+```bash
+playwright-cli open "{storybook_story_url 또는 preview_page_url}"
 ```
-Skill(skill: "ralph-loop:ralph-loop")
+
+ralph-loop을 시작한다:
+```
+Skill(skill: "ralph-loop:ralph-loop", args: "--max-iterations 5 --completion-promise VISUAL_MATCH")
 ```
 
 ralph-loop 실행이 실패하면 AskUserQuestion으로 사용자에게 확인:
@@ -115,22 +121,41 @@ AskUserQuestion:
   선택: 재시도 / 건너뛰기 (Visual Verification 종료)"
 ```
 
-각 iteration에서:
+ralph-loop 프롬프트 — 각 iteration에서:
 
-a. **구현 스크린샷 캡처**:
+a. **Figma 디자인 캡처**:
    ```
-   ToolSearch(query: "select:mcp__playwright__browser_navigate")
-   → browser_navigate(url: "{storybook_story_url 또는 preview_page_url}")
-   → browser_take_screenshot()
+   ToolSearch(query: "select:mcp__claude_ai_Figma__get_screenshot")
+   → mcp__claude_ai_Figma__get_screenshot(fileKey: "{key}", nodeId: "{id}")
    ```
+   Figma MCP가 인라인 이미지를 반환한다.
 
-b. **Figma vs 구현 비교 분석**: 레이아웃, 색상, 타이포그래피, 간격
+b. **구현 스크린샷 캡처**:
+   ```bash
+   playwright-cli screenshot --filename=.claude/screenshots/visual-impl.png
+   ```
+   ```
+   Read(".claude/screenshots/visual-impl.png")
+   ```
+   playwright-cli로 캡처한 파일을 Read로 열어 LLM 멀티모달로 확인한다.
 
-c. **차이점 수정**: CSS/스타일, 레이아웃, 디자인 토큰
+c. **Figma vs 구현 비교 분석**:
+   위 두 이미지를 LLM 멀티모달로 비교하여 차이점을 항목별로 분석한다:
+   - 레이아웃 (배치, 정렬, 크기)
+   - 색상 (배경, 텍스트, 보더)
+   - 타이포그래피 (폰트, 사이즈, weight)
+   - 간격 (padding, margin, gap)
 
-d. **테스트 실행 → Green 유지 확인** (깨지면 수정 revert 후 다른 방법 시도)
+d. **차이점이 없으면** → `<promise>VISUAL_MATCH</promise>` 출력하여 ralph-loop 종료
 
-e. **수렴 판단**: 주요 차이 해소 시 종료, 최대 5회 반복 후에도 차이 남으면 남은 차이 목록과 함께 종료
+e. **차이점이 있으면**:
+   1. CSS/스타일, 레이아웃, 디자인 토큰 수정
+   2. 테스트 실행 → Green 유지 확인 (깨지면 수정 revert 후 다른 방법 시도)
+   3. 다음 iteration으로 진행
+
+**수렴 조건:**
+- `<promise>VISUAL_MATCH</promise>` 출력 시 ralph-loop 자동 종료
+- 최대 5회 반복 도달 시 자동 종료, 잔여 차이 목록과 함께 보고
 
 ### 4. 커밋
 
