@@ -50,6 +50,7 @@ prompt에 다음 정보가 포함되어야 한다:
 - API 응답 모델 기반 interface 정의 → 컴포넌트는 이 interface에만 의존
 - 대부분 API 타입 참조로 충분. 별도 클라이언트 Entity는 정말 필요한 경우에만
 - 별도 Entity 필요 조건: 여러 API 응답 조합, 클라이언트 고유 상태, API와 다른 구조
+- **YAGNI 체크**: 모든 interface/layer/추상화에 대해 "현재 TC가 이것을 요구하는가?"를 검증. TC에 근거 없는 확장 포인트, 중간 레이어, 범용 interface는 제거
 - enum/상수값은 별도 정의 가능
 - **데이터 성격 분류** (template.md의 "데이터 성격" 컬럼):
   - **Server-origin**: API에서 가져오는 데이터 (서버가 source of truth)
@@ -162,6 +163,7 @@ template.md의 구조를 따라 설계한다.
 
 **도출 기준:**
 - TC에서 로딩/에러 상태를 명시적으로 검증 → UX 에러/로딩 처리 항목 Y
+- TC에서 mutation 후 실패 시나리오가 있음 → UX 에러/로딩 처리 항목에 롤백 전략 기록
 - TC에서 대량 데이터를 다룸 (예: "1000개 아이템") → Performance 초기 로딩 항목 검토
 - TC에서 빈번한 사용자 인터랙션 (수량 변경, 검색 입력) → Performance 리렌더링 항목 검토
 - TC에서 네트워크 실패/오프라인 시나리오 → Network 캐시 전략 항목 Y
