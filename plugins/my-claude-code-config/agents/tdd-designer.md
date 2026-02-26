@@ -21,6 +21,7 @@ prompt에 다음 정보가 포함되어야 한다:
 |------|------|------|
 | `human_draft` | **필수** | 인간의 설계 초안 (핵심 결정 + 열린 질문). 자유 형식 허용 |
 | `techspec_content` | 필수 | Linear TechSpec 문서의 Functional Requirements 섹션 (Given/When/Then 테이블) |
+| `nfr_content` | 선택 | Linear TechSpec 문서의 Non-Functional Requirements 섹션. Optimization Checklist 도출에 사용 |
 | `figma_url` | 선택 | Figma 디자인 URL (있으면 컴포넌트 상세 분석) |
 | `existing_design` | 선택 | 기존 Design 섹션 (업데이트 시) |
 
@@ -50,6 +51,10 @@ prompt에 다음 정보가 포함되어야 한다:
 - 대부분 API 타입 참조로 충분. 별도 클라이언트 Entity는 정말 필요한 경우에만
 - 별도 Entity 필요 조건: 여러 API 응답 조합, 클라이언트 고유 상태, API와 다른 구조
 - enum/상수값은 별도 정의 가능
+- **데이터 성격 분류** (template.md의 "데이터 성격" 컬럼):
+  - **Server-origin**: API에서 가져오는 데이터 (서버가 source of truth)
+  - **Client-persistent**: localStorage, IndexedDB 등에 저장되는 클라이언트 데이터
+  - **Client-ephemeral**: 폼 입력, UI 토글, 로딩 상태 등 세션 내 임시 데이터
 
 ### 1-2. Domain Usecase 정의
 
@@ -64,6 +69,31 @@ prompt에 다음 정보가 포함되어야 한다:
 - TC의 모든 고유한 **When 액션**이 Usecase에 매핑되는지 확인
 - 매핑되지 않는 When → Usecase 추가 또는 기존 Usecase scope 확장
 - Usecase가 참조하는 TC 번호가 실제 Functional Requirements에 존재하는지 확인
+
+## Phase 1.5: Interface Contract 정의
+
+> Phase 1의 데이터 모델과 Usecase를 기반으로, 모듈 간 API 계약을 정의한다.
+> Phase 0의 초안에서 데이터 결정(훅 재사용, API 참조 등)과 교차 검증한다.
+
+### 1.5-1. Server-Client API
+
+Phase 1 데이터 모델의 Server-origin 데이터와 Usecase의 Input/Output에서 도출:
+
+- 각 Server-origin 데이터에 대해: 어떤 query hook으로 조회하는가?
+- 각 mutation Usecase에 대해: 어떤 mutation hook으로 실행하는가?
+- TC의 Given에서 서버 상태 조건 → 해당 query hook의 파라미터
+- TC의 When에서 서버 데이터 변경 → 해당 mutation hook의 파라미터
+- 캐시 전략: mutation 후 어떤 query를 invalidate하는가?
+
+### 1.5-2. Client-Client API
+
+모듈 경계를 형성하는 핵심 인터페이스만 사전 정의:
+
+- Container → Presentational 전달 데이터의 Props Interface 이름
+- 핵심 Callback 시그니처 (Usecase를 트리거하는 콜백)
+- 공용 컴포넌트의 Props Interface (여러 소비자가 참조)
+
+⚠️ 모든 컴포넌트의 Props를 여기서 정의하지 않는다. **모듈 경계를 형성하는 핵심 인터페이스**만 정의한다. 상세 Props는 Phase 3(Component)에서 설계.
 
 ## Phase 2: Business Rules 추출
 
@@ -125,13 +155,28 @@ template.md의 구조를 따라 설계한다.
 - **Presentational만 Visual Contract 작성** — Props/Callbacks 기반 렌더링 계약
 - States 테이블은 실제 존재하는 상태만 기록
 
+## Phase 3.5: Optimization Checklist
+
+> TC의 Given/When/Then과 NFR에서 최적화 필요 항목을 도출한다.
+> 모든 항목을 채우지 않는다. 해당되는 항목만 기록.
+
+**도출 기준:**
+- TC에서 로딩/에러 상태를 명시적으로 검증 → UX 에러/로딩 처리 항목 Y
+- TC에서 대량 데이터를 다룸 (예: "1000개 아이템") → Performance 초기 로딩 항목 검토
+- TC에서 빈번한 사용자 인터랙션 (수량 변경, 검색 입력) → Performance 리렌더링 항목 검토
+- TC에서 네트워크 실패/오프라인 시나리오 → Network 캐시 전략 항목 Y
+- NFR에 접근성 요구사항 → A11y 항목 Y
+- 해당 TC/NFR이 없으면 → "해당없음"으로 표기
+
+template.md의 Optimization Checklist 테이블 구조를 따른다.
+
 ## Phase 4: Verification 섹션
 
 template.md의 Verification 구조를 따른다. Integration Test 최우선. UI 렌더링 자체보다 사용자 행동과 그 결과를 검증.
 
 ## Output Contract
 
-설계 결과를 마크다운으로 반환한다. 필수 섹션: `## Design` (데이터 모델, Business Rules, Usecase, Component & Visual Contract, Usecase-Component Integration), `## Component & Code - Client`, `## Verification`. 정확한 섹션 구조는 template.md 참조.
+설계 결과를 마크다운으로 반환한다. 필수 섹션: `## Design` (데이터 모델, Business Rules, Usecase, Interface Contract, Component & Visual Contract, Usecase-Component Integration, Optimization Checklist), `## Component & Code - Client`, `## Verification`. 정확한 섹션 구조는 template.md 참조.
 
 마지막에 `## 초안 반영 결과` 섹션을 추가한다:
 

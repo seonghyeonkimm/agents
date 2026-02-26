@@ -39,6 +39,7 @@ allowed-tools:
    → mcp__plugin_linear_linear__get_document(id: "{document.id}")
    ```
    - 문서 내용에서 **Functional Requirements (Given/When/Then)** 섹션 추출
+   - 문서 내용에서 **Non-Functional Requirements** 섹션 추출 (있는 경우)
    - `get_document` 도구가 없으면, 사용자에게 Linear URL을 안내하고 수동 확인 요청
 
 ### Phase 1.5: 설계 초안 수집 (필수)
@@ -65,7 +66,10 @@ AskUserQuestion:
   - 인지 부하: 이 설계를 이해하려면 한 번에 기억해야 할 개념이 몇 개인가?
   - 데이터 흐름: 상태가 어디서 생성되고, 어떻게 흘러가며, 누가 변경하는가?
   - 도메인 순수성: 도메인 로직이 UI/API/외부 의존성 없이 순수 함수로 분리되는가?
-  - 테스트 경계: 테스트가 구현 세부사항이 아닌, 클라이언트에 노출된 공개 인터페이스를 검증하는 구조인가?"
+  - 테스트 경계: 테스트가 구현 세부사항이 아닌, 클라이언트에 노출된 공개 인터페이스를 검증하는 구조인가?
+  - API 계약: 서버 데이터를 어떤 hook/endpoint로 조회하고, 어떤 hook으로 변경하는가?
+  - 데이터 분류: 이 데이터는 서버에서 오는가, 클라이언트에서만 존재하는가? 영속적인가 휘발성인가?
+  - 컴포넌트 계약: 이 컴포넌트의 Props Interface를 외부 소비자 관점에서 정의할 수 있는가?"
 ```
 
 ### Phase 2-3: 설계 (tdd-designer agent 위임)
@@ -76,13 +80,16 @@ AskUserQuestion:
 Task(
   subagent_type: "tdd-designer",
   prompt: """
-  다음 설계 초안과 TechSpec을 기반으로 Domain Model + Client Architecture를 설계해주세요.
+  다음 설계 초안과 TechSpec을 기반으로 Domain Model + Interface Contract + Client Architecture를 설계해주세요.
 
   ## 설계 초안 (인간 제공, 필수)
   {Phase 1.5에서 수집한 인간의 설계 초안}
 
   ## TechSpec Functional Requirements
   {Linear 문서에서 추출한 Given/When/Then 섹션 전문}
+
+  ## Non-Functional Requirements (있는 경우)
+  {Linear 문서에서 추출한 NFR 섹션, 없으면 "없음"}
 
   ## Figma URL (있는 경우)
   {meta.yaml의 sources.figma 값, 없으면 "없음"}
@@ -94,7 +101,7 @@ Task(
 ```
 
 **agent 반환 결과**: 아래 섹션이 포함된 마크다운
-- `## Design` (데이터 모델, Business Rules, Usecase, Component & Visual Contract, Usecase-Component Integration)
+- `## Design` (데이터 모델, Business Rules, Usecase, Interface Contract, Component & Visual Contract, Usecase-Component Integration, Optimization Checklist)
 - `## Component & Code - Client`
 - `## Verification`
 
@@ -120,14 +127,20 @@ tdd-designer agent가 반환한 마크다운(Design, Component & Code, Verificat
 Design 완료!
 
 Domain Model:
-- 데이터 모델: {interface list}
+- 데이터 모델: {interface list} (Server-origin: {N}개, Client-only: {N}개)
 - Business Rules: {N}개 (2곳 이상 참조)
 - Usecases: {usecase list}
+
+Interface Contract:
+- Server-Client: {N}개 hooks (query: {N}, mutation: {N})
+- Client-Client: {N}개 핵심 Props Interfaces
 
 Client Architecture:
 - Pages: {page list}
 - Components: {N}개
 - Shared: {shared component list}
+
+Optimization: {N}개 항목 적용 (해당 시)
 
 Linear Document: {document URL} (Design 섹션 업데이트됨)
 * 로컬 파일 수정 없음 - Linear가 Single Source of Truth
@@ -174,14 +187,20 @@ Claude: 초안을 기반으로 TC와 교차 검증하며 설계합니다...
 
 Claude: Design 완료!
   Domain Model:
-  - 데이터 모델: CartData (API 참조), ProductData (API 참조)
+  - 데이터 모델: CartData (API 참조), ProductData (API 참조) (Server-origin: 2개, Client-only: 1개)
   - Business Rules: 3개
   - Usecases: AddToCart, RemoveFromCart, UpdateQuantity
+
+  Interface Contract:
+  - Server-Client: 3개 hooks (query: 1, mutation: 2)
+  - Client-Client: 2개 핵심 Props Interfaces
 
   Client Architecture:
   - Pages: CartPage
   - Components: 8개
   - Shared: Button, QuantitySelector
+
+  Optimization: 3개 항목 적용 (캐시 전략, Optimistic update, 에러/로딩 상태)
 
   초안 반영:
   - 반영: CartContainer/CartList/CartItem 분리, useCartQuery 재사용, React Query + useState
