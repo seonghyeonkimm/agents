@@ -116,11 +116,18 @@ SLA/SLO 기준의 시스템 요구사항.
    - Then에서 결과 규칙(파생 값, 조건부 동작) 식별
    - 자연어 기술만, 함수명/시그니처는 구현 시 결정
 3. **Usecase**: 주요 사용 시나리오 테이블 (Input → Output)
+3.5. **Interface Contract**: Server-Client API (hooks/endpoints) + Client-Client API (component props)
+   - Server-Client: query hook, mutation hook, 파라미터, 응답 타입, 캐시 전략
+   - Client-Client: 모듈 경계를 형성하는 핵심 Props Interface와 Callback 시그니처
+   - TC 번호로 추적
 4. **Component & Visual Contract**: 컴포넌트 계층 설계. 두 유형으로 분류:
    - **Container**: Usecase 연결, 서버 상태 구독, 데이터 가공 → 하위 Presentational에 전달. Visual Contract 없음
    - **Presentational**: Props/Callbacks 기반 순수 UI. Visual Contract 필수 (Layout, States, Interactions)
    - Figma가 있으면 `get_design_context`/`get_variable_defs`에서 추출, 없으면 테스트 케이스에서 도출
 5. **Usecase-Component Integration**: 연결 지점 정의
+6. **Optimization Checklist**: TC/NFR에서 도출된 최적화 항목만 기록
+   - Performance, UX, Network, A11y 카테고리
+   - 해당 없는 항목은 기록하지 않음
 
 **데이터 모델 가이드:**
 - ✅ API 응답 타입을 기반으로 interface 정의 → 컴포넌트는 interface만 의존
@@ -176,3 +183,5 @@ SLA/SLO 기준의 시스템 요구사항.
 | 규칙 과다 명세 | Design에서 함수명/시그니처까지 결정 | 자연어 기술만, 구현은 TDD에 위임 |
 | 규칙 중복 구현 | UI/API에서 같은 규칙을 각각 구현 | 구현 시 `entity-object-pattern` 스킬 참조 |
 | Container/Presentational 혼합 | 하나의 컴포넌트가 Usecase 호출 + UI 렌더링 | Container(데이터 흐름)와 Presentational(Props/Callbacks)을 분리 |
+| 모든 Props를 Interface Contract에 기록 | 과잉 명세 | 모듈 경계를 형성하는 핵심 인터페이스만 정의. 내부 컴포넌트 Props는 Component 섹션에서 |
+| Optimization Checklist 전부 채움 | RADIO 원칙 오해 | TC/NFR에서 도출된 항목만. "해당없음"이 대부분이어도 정상 |
