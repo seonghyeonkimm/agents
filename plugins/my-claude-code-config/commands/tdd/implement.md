@@ -218,6 +218,7 @@ Linear issue description의 "작업 대상" 섹션에서 패키지 정보를 추
 
 ````
 🚫 **금지 사항 — 아래 규칙을 반드시 준수하세요:**
+- **작업 시작 전** 반드시 `git fetch origin {base_branch} && git merge origin/{base_branch}`를 실행하세요. local branch가 remote보다 뒤쳐져 있으면 이전 batch 작업물이 누락됩니다.
 - PR 생성 시 `--base` 플래그를 반드시 아래 Context의 **Base Branch** 값으로 지정하세요. `main`을 base로 사용하지 마세요.
 - 아래 Step 1부터 순서대로 실행하세요. 각 Step 완료 후 Review Gate에서 반드시 멈추고 인간의 리뷰를 받으세요.
 
