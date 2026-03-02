@@ -13,7 +13,7 @@ allowed-tools:
 
 # TDD Design Command
 
-`/tdd:spec`의 결과물을 기반으로 데이터 모델(API 기반 interface)과 비즈니스 규칙, 클라이언트 컴포넌트를 설계한다.
+`/tdd:spec`의 결과물을 기반으로 데이터 모델(API 기반 interface)과 클라이언트 컴포넌트를 설계한다.
 
 ## Prerequisites
 
@@ -77,7 +77,7 @@ AskUserQuestion:
 
 ### Phase 2-3: 설계 (tdd-designer agent 위임)
 
-데이터 모델, Business Rules, Usecase, Component, Visual Contract 설계를 `tdd-designer` agent에 위임한다.
+데이터 모델, Usecase, Component, Visual Contract 설계를 `tdd-designer` agent에 위임한다.
 
 ```
 Task(
@@ -104,7 +104,7 @@ Task(
 ```
 
 **agent 반환 결과**: 아래 섹션이 포함된 마크다운
-- `## Design` (데이터 모델, Business Rules, Usecase, Interface Contract, Component & Visual Contract, Usecase-Component Integration, Optimization Checklist)
+- `## Design` (데이터 모델, Usecase, Interface Contract, Component & Visual Contract, Usecase-Component Integration, Optimization Checklist)
 - `## Component & Code - Client`
 - `## Verification`
 
@@ -131,7 +131,6 @@ Design 완료!
 
 Domain Model:
 - 데이터 모델: {interface list} (Server-origin: {N}개, Client-only: {N}개)
-- Business Rules: {N}개 (2곳 이상 참조)
 - Usecases: {usecase list}
 
 Interface Contract:
@@ -191,7 +190,6 @@ Claude: 초안을 기반으로 TC와 교차 검증하며 설계합니다...
 Claude: Design 완료!
   Domain Model:
   - 데이터 모델: CartData (API 참조), ProductData (API 참조) (Server-origin: 2개, Client-only: 1개)
-  - Business Rules: 3개
   - Usecases: AddToCart, RemoveFromCart, UpdateQuantity
 
   Interface Contract:

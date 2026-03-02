@@ -38,7 +38,6 @@ prompt에 다음 정보가 포함되어야 한다:
 | 체크 항목 | 판단 기준 |
 |----------|----------|
 | 데이터 모델 | 요구사항에서 참조하는 데이터가 interface에 정의되어 있는가? |
-| Business Rules | 요구사항의 비즈니스 규칙이 BR 목록에 포함되어 있는가? |
 | Usecase | 요구사항의 사용자 행동이 Usecase로 정의되어 있는가? |
 | Component | 요구사항의 UI 변경이 컴포넌트 설계에 반영되어 있는가? |
 | Verification | 요구사항에 대한 테스트가 Verification 섹션에 있는가? |
@@ -78,7 +77,7 @@ prompt에 다음 정보가 포함되어야 한다:
 - Functional Requirements: 새 Given/When/Then 행 추가 또는 기존 행 수정
 
 **Design 액션:**
-- 데이터 모델/BR/Usecase/Component 해당 섹션 보완
+- 데이터 모델/Usecase/Component 해당 섹션 보완
 
 **Issues 액션:**
 - 기존 이슈 description 수정
@@ -104,8 +103,8 @@ prompt에 다음 정보가 포함되어야 한다:
 |---------|---------|-----|-----|------|
 
 ### Design (tdd:design)
-| 요구사항 | Data Model | BR | Usecase | Component | Verification | 상태 |
-|---------|-----------|-----|---------|-----------|-------------|------|
+| 요구사항 | Data Model | Usecase | Component | Verification | 상태 |
+|---------|-----------|---------|-----------|-------------|------|
 
 ### Issues (tdd:issues)
 | 요구사항 | 관련 이슈 | 상태 |
