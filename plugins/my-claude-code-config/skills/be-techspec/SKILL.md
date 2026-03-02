@@ -114,12 +114,13 @@ SLA/SLO 기준의 시스템 요구사항.
    - External API: method, path, params, body, response, 상태 코드, 에러 코드
    - Internal API: 서비스 간 호출, 메시지 큐, 이벤트
    - TC 번호로 추적
-3. **Module & Layer Structure**: Clean Architecture 동심원 설계 (의존성: 바깥 → 안)
-   - 바깥 (동일 레벨, 서로 의존 없음):
-     - **Presentation**: Controller, Request/Response DTO — HTTP 관심사만
-     - **Infrastructure**: Repository 구현체, Adapter — 프레임워크/DB 접근
-   - 중간: **Application** — UseCase 조율, Port interface 정의, 트랜잭션 경계
-   - 안: **Domain** — Entity, Value Object, Domain Service — 외부 의존 없음
+3. **Module & Layer Structure**: Clean Architecture (호출 흐름 + DI 주입)
+   - 호출: **Presentation** → **Application** → **Domain**
+   - 주입: **Infrastructure**가 Application의 Port를 구현 (DI)
+   - **Presentation**: Controller, DTO — HTTP 진입점, UseCase 호출 (프레임워크 결합 허용, 얇게 유지)
+   - **Application**: UseCase 조율, Port interface 정의, 트랜잭션 경계
+   - **Domain**: Entity, Value Object, Domain Service — 외부 의존 없음
+   - **Infrastructure**: Repository 구현체, Adapter — Port 구현, DI로 주입
 4. **Usecase-Module Integration**: 연결 지점 정의
 5. **Optimization Checklist**: TC/NFR에서 도출된 최적화 항목만 기록
 
