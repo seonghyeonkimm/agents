@@ -82,7 +82,7 @@ allowed-tools:
    | Solution | `/tdd:spec` | 핵심 변경사항 목록 |
    | Acceptance Criteria | `/tdd:spec` | 테스트 가능한 기준 |
    | Functional Requirements | `/tdd:spec` | Given/When/Then 테스트 케이스 |
-   | Design | `/tdd:design` | 데이터 모델, Business Rules, Usecases |
+   | Design | `/tdd:design` | 데이터 모델, Usecases |
    | Component & Code | `/tdd:design` | 컴포넌트 트리, State 설계 |
    | Verification | `/tdd:design` | Integration/Unit/E2E 테스트 목록 |
 
@@ -166,7 +166,7 @@ ToolSearch(query: "select:mcp__plugin_linear_linear__update_document")
 - Solution: 새 변경사항 항목 추가
 - AC: 새 기준 추가
 - Functional Requirements: 새 Given/When/Then 행 추가 또는 기존 행 수정
-- Design: 데이터 모델/BR/Usecase/Component 해당 섹션 보완
+- Design: 데이터 모델/Usecase/Component 해당 섹션 보완
 - Verification: 새 테스트 항목 추가
 
 #### 6-2. Linear 이슈 업데이트

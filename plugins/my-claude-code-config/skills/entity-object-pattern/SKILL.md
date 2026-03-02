@@ -1,9 +1,9 @@
 ---
 name: entity-object-pattern
 description: |
-  Entity Object(companion object) 패턴. Entity interface와 같은 이름의 const 객체에 비즈니스 규칙 함수를 그룹화.
-  Use when: TDD Refactor 단계에서 비즈니스 규칙을 정리할 때,
-  Entity 구현 시 비즈니스 규칙 코드화, UI/API/테스트에서 동일 로직 재사용이 필요할 때.
+  Entity Object(companion object) 패턴. Entity interface와 같은 이름의 const 객체에 도메인 로직 함수를 그룹화.
+  Use when: TDD Refactor 단계에서 반복되는 도메인 로직을 정리할 때,
+  Entity 구현 시 도메인 로직 코드화, UI/API/테스트에서 동일 로직 재사용이 필요할 때.
 globs:
   - "**/_models/**/*.ts"
   - "**/models/**/*.ts"
@@ -13,10 +13,10 @@ globs:
 # Entity Object Pattern
 
 > **사용 시점**: TDD Refactor 단계에서 참조합니다.
-> Design 단계에서는 비즈니스 규칙을 자연어로 식별(`/tdd:design`의 Business Rules 테이블)하고,
-> 구현 시 이 패턴을 적용하여 Entity Object로 그룹화합니다.
+> Given/When/Then 테스트 케이스에서 반복되는 도메인 로직을 식별하고,
+> 이 패턴을 적용하여 Entity Object로 그룹화합니다.
 
-TypeScript의 companion object 패턴을 활용하여, Entity `interface`와 같은 이름의 `const` 객체에 비즈니스 규칙 함수를 그룹화하는 패턴.
+TypeScript의 companion object 패턴을 활용하여, Entity `interface`와 같은 이름의 `const` 객체에 도메인 로직 함수를 그룹화하는 패턴.
 
 ## 핵심 원리
 
@@ -24,7 +24,7 @@ TypeScript는 타입과 값이 별도 네임스페이스에 존재하므로, `in
 
 ```typescript
 export interface AdGroup { /* 타입 */ }
-export const AdGroup = { /* 값 (비즈니스 규칙 함수들) */ } as const;
+export const AdGroup = { /* 값 (도메인 로직 함수들) */ } as const;
 
 // 사용처에서:
 import { AdGroup } from './AdGroup';

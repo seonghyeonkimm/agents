@@ -8,7 +8,7 @@ description: |
 
 # FE TechSpec
 
-**관련 스킬:** `entity-object-pattern` - 구현 시 비즈니스 규칙을 Entity Object로 그룹화하는 패턴
+**관련 스킬:** `entity-object-pattern` - 구현 시 반복되는 도메인 로직을 Entity Object로 그룹화하는 패턴
 
 FE TechSpec은 프로젝트의 기술적 구현 방향을 정의하는 문서. PRD(요구사항)와 Figma(디자인)를 기반으로 Solution, Acceptance Criteria, Test Cases를 도출한다.
 
@@ -110,22 +110,17 @@ SLA/SLO 기준의 시스템 요구사항.
    - API 응답 모델을 기반으로 interface를 정의하고, 컴포넌트는 이 interface에만 의존
    - 대부분 API 타입 참조로 충분. 별도 클라이언트 Entity는 정말 필요한 경우에만 추가
    - 필요한 경우: 여러 API 응답 조합, 클라이언트 고유 상태, API와 다른 구조가 필요한 경우
-2. **Business Rules**: 테스트 케이스에서 비즈니스 규칙 식별
-   - Given에서 상태 조건 규칙 식별
-   - When에서 행동 제약 규칙 식별
-   - Then에서 결과 규칙(파생 값, 조건부 동작) 식별
-   - 자연어 기술만, 함수명/시그니처는 구현 시 결정
-3. **Usecase**: 주요 사용 시나리오 테이블 (Input → Output)
-3.5. **Interface Contract**: Server-Client API (hooks/endpoints) + Client-Client API (component props)
+2. **Usecase**: 주요 사용 시나리오 테이블 (Input → Output)
+2.5. **Interface Contract**: Server-Client API (hooks/endpoints) + Client-Client API (component props)
    - Server-Client: query hook, mutation hook, 파라미터, 응답 타입, 캐시 전략
    - Client-Client: 모듈 경계를 형성하는 핵심 Props Interface와 Callback 시그니처
    - TC 번호로 추적
-4. **Component & Visual Contract**: 컴포넌트 계층 설계. 두 유형으로 분류:
+3. **Component & Visual Contract**: 컴포넌트 계층 설계. 두 유형으로 분류:
    - **Container**: Usecase 연결, 서버 상태 구독, 데이터 가공 → 하위 Presentational에 전달. Visual Contract 없음
    - **Presentational**: Props/Callbacks 기반 순수 UI. Visual Contract 필수 (Layout, States, Interactions)
    - Figma가 있으면 `get_design_context`/`get_variable_defs`에서 추출, 없으면 테스트 케이스에서 도출
-5. **Usecase-Component Integration**: 연결 지점 정의
-6. **Optimization Checklist**: TC/NFR에서 도출된 최적화 항목만 기록
+4. **Usecase-Component Integration**: 연결 지점 정의
+5. **Optimization Checklist**: TC/NFR에서 도출된 최적화 항목만 기록
    - Performance, UX, Network, A11y 카테고리
    - 해당 없는 항목은 기록하지 않음
 
@@ -134,13 +129,6 @@ SLA/SLO 기준의 시스템 요구사항.
 - ✅ enum/상수값은 `constants/`에 별도 정의 가능
 - ❌ API 응답과 동일한 구조를 클라이언트 Entity로 재정의
 - ⚠️ 별도 클라이언트 Entity가 필요하면 사유를 명시 (예: "여러 API 응답 조합 필요")
-
-**Business Rules 가이드:**
-- ✅ 2곳 이상에서 참조되는 비즈니스 규칙 → 테이블에 기록
-- ❌ 한 번만 사용되는 단순 조건 → 테이블에서 제외
-- ❌ 컴포넌트 렌더링 분기(예: "광고가 0개이면 추천 뷰 노출")는 비즈니스 규칙이 아님 → 해당 컴포넌트의 렌더링 책임
-- "참조 지점" 컬럼으로 어디서 사용되는지 명시 (예: "AdGroupForm, API request")
-- 함수명/시그니처는 구현 시 `entity-object-pattern` 스킬 참조하여 결정
 
 ### Component & Code - Client
 - Test cases 기반으로 module, usecase, 컴포넌트 구조 추출
@@ -175,12 +163,9 @@ SLA/SLO 기준의 시스템 요구사항.
 | NFR 생략 | 선택사항이라 무시 | 공개 페이지면 SEO/A11y 필수 검토 |
 | Solution에 코드 포함 | "기술적 해결책"으로 오해 | 비기술 요약으로 작성 |
 | 클라이언트 Entity 과잉 설계 | API 응답을 재정의하려 함 | API 타입 기반 interface로 충분. 별도 Entity는 사유 필요 |
-| 렌더링 분기를 규칙으로 추출 | 단일 컴포넌트의 if/else를 비즈니스 규칙으로 오인 | 2곳 이상 참조되는 로직만 Business Rules 테이블에 기록 |
 | UI 문구 가정 | Figma 미확인 | variants에서 실제 문구 추출 |
 | FR에 Entity/Command 헤더 | 지침 오해 | Design에서만 사용, FR은 테이블만 |
 | Verification 누락 | 선택사항으로 오인 | Integration Test 필수 |
-| 비즈니스 규칙 누락 | Given/When/Then에서 규칙 미식별 | Business Rules 테이블 작성 |
-| 규칙 과다 명세 | Design에서 함수명/시그니처까지 결정 | 자연어 기술만, 구현은 TDD에 위임 |
 | 규칙 중복 구현 | UI/API에서 같은 규칙을 각각 구현 | 구현 시 `entity-object-pattern` 스킬 참조 |
 | Container/Presentational 혼합 | 하나의 컴포넌트가 Usecase 호출 + UI 렌더링 | Container(데이터 흐름)와 Presentational(Props/Callbacks)을 분리 |
 | 모든 Props를 Interface Contract에 기록 | 과잉 명세 | 모듈 경계를 형성하는 핵심 인터페이스만 정의. 내부 컴포넌트 Props는 Component 섹션에서 |
