@@ -103,23 +103,28 @@ DB 스키마와 Domain Entity를 함께 정의. DB 스키마가 Primary이나, D
 
 ### 3. Module & Layer Structure
 
-Clean Architecture 기반. 의존성은 항상 바깥 → 안 방향.
+Clean Architecture 기반 동심원 구조. 의존성은 항상 바깥 → 안 방향.
 
 ```
-{FeatureName}                                 의존성 방향: 바깥 → 안
-├── Presentation   [요청/응답, HTTP 관심사]          ← 바깥
-│   ├── {FeatureName}Controller
-│   └── {FeatureName}Dto (Request/Response)
-├── Infrastructure [구현체, 프레임워크, DB]            ← 바깥
-│   ├── {FeatureName}RepositoryImpl
-│   └── {ExternalService}Adapter (해당 시)
-├── Application    [유스케이스 조율, 트랜잭션]
-│   ├── {FeatureName}UseCase
-│   └── {FeatureName}Repository (interface)
-└── Domain         [핵심 비즈니스 규칙, 외부 의존 없음] ← 안
-    ├── {FeatureName} (Entity)
-    └── {FeatureName}DomainService (해당 시)
+{FeatureName}
+
+  바깥 ─┬── Presentation   [요청/응답, HTTP 관심사]
+  (동일) │   ├── {FeatureName}Controller
+        │   └── {FeatureName}Dto (Request/Response)
+        └── Infrastructure [구현체, 프레임워크, DB]
+            ├── {FeatureName}RepositoryImpl
+            └── {ExternalService}Adapter (해당 시)
+
+  중간 ──── Application    [유스케이스 조율, 트랜잭션]
+            ├── {FeatureName}UseCase
+            └── {FeatureName}Repository (interface)
+
+  안 ────── Domain         [핵심 비즈니스 규칙, 외부 의존 없음]
+            ├── {FeatureName} (Entity)
+            └── {FeatureName}DomainService (해당 시)
 ```
+
+> Presentation과 Infrastructure는 동일 레벨(바깥). 서로 의존하지 않고, 각각 독립적으로 Application → Domain을 향해 의존한다.
 
 **Presentation:**
 - **라우팅**: {엔드포인트 목록}
