@@ -1,22 +1,18 @@
 ---
 name: design-radio
 description: |
-  RADIO 기반 FE/BE 공통 설계 프레임워크.
-  Use when: 새 기능 설계, 시스템 설계, 아키텍처 결정,
-  "어디서부터 시작해야 할지 모르겠다"고 느낄 때.
+  RADIO 기반 FE/BE 설계 체크리스트.
+  `/design` command가 각 Step에서 참조하는 판단 기준과 질문 목록.
 ---
 
-# Design RADIO
+# Design RADIO — 체크리스트
 
-GreatFrontEnd의 RADIO Framework를 실무 확장한 설계 지도.
-C(Context)로 시작하고, RADIO 단계를 거쳐, V(Verification)로 마무리한다.
+GreatFrontEnd의 RADIO Framework를 실무 확장한 설계 체크리스트.
+`/design` command가 C → RADIO → V 각 단계에서 이 스킬을 참조한다.
 
-**관련 도구:**
-- `tdd:spec` — R + Verification을 Linear 문서로 구체화
-- `tdd:design` — A + D + I를 agent로 상세 설계
-- `fe-techspec` — FE 특화 TechSpec 템플릿
-- `be-techspec` — BE 특화 TechSpec 템플릿
-- `entity-object-pattern` — D에서 식별한 엔티티의 구현 패턴
+**사용 방법:**
+- `/design` command의 각 Step에서 자동 참조됨
+- 단독 참조도 가능 (설계 리뷰, 체크리스트 확인 시)
 
 ## C → RADIO → V
 
