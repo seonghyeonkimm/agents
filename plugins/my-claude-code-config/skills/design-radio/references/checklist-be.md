@@ -7,7 +7,7 @@
 ## C — Context (BE, Gate In)
 
 - [ ] 기존 DB 스키마에서 관련 테이블은?
-- [ ] 서비스 레이어 구조는? (controller-service-repository 등)
+- [ ] 레이어 구조는? (호출: Presentation→Application→Domain, 주입: Infrastructure→Port 구현)
 - [ ] 공통 미들웨어/인터셉터는?
 - [ ] 인프라 제약은? (DB 종류, 배포 환경 등)
 
@@ -26,6 +26,8 @@
 ## A — Architecture (BE)
 
 - [ ] 서비스 경계를 정했는가?
+- [ ] 호출 흐름이 명확한가? (Presentation → Application → Domain)
+- [ ] 외부 의존(DB, 외부 API)이 Port interface로 추상화되는가?
 - [ ] DB 선택 근거가 있는가?
 - [ ] 캐싱 전략이 필요한가?
 - [ ] 비동기 처리가 필요한 작업은?

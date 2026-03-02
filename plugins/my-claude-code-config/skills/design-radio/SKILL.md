@@ -110,3 +110,4 @@ Gate(C/V)는 항상 수행한다. RADIO 단계는 작업 크기에 맞춰 선택
 | D와 I를 동시에 생각 | 데이터와 계약이 뒤섞임 | D(무엇이 존재하는가) 먼저, I(어떻게 주고받는가) 다음 |
 | O에서 추측성 최적화 | YAGNI 위반 | R의 NFR에 없으면 안 함 |
 | V 없이 구현 시작 | "완료"가 정의되지 않음 | 최소 3개 Given/When/Then |
+| Domain이 Infrastructure를 import | Dependency Rule 위반 | Domain은 순수 비즈니스 규칙만. 외부 의존은 Port interface로 역전 |
