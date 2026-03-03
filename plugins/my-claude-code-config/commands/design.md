@@ -1,6 +1,6 @@
 ---
 name: design
-description: RADIO 프레임워크 기반 설계. 작업 규모에 따라 깊이를 조절하고, 도메인이 복잡하면 DDD로 딥다이브한다
+description: RADIO 프레임워크 기반 설계. 작업 규모에 따라 깊이를 조절하고, D step에서 비즈니스 제품은 DDD로, 기술 라이브러리는 Library Design으로 딥다이브한다
 arguments:
   - name: context
     description: 설계할 기능 설명, PRD, Linear 이슈 URL, 또는 기존 코드 경로
@@ -22,14 +22,14 @@ allowed-tools:
 
 RADIO 프레임워크 기반 대화형 설계 도구.
 C(Context)로 시작해 RADIO를 거쳐 V(Verification)로 마무리한다.
-도메인 복잡도가 높으면 D step에서 DDD 딥다이브로 전환한다.
+D step에서 비즈니스 제품은 DDD로, 기술 라이브러리는 Library Design으로 딥다이브한다.
 
 ```
 Gate In ─ C  Context        기존 코드·패턴·컨벤션 파악
 
           R  Requirements   문제 정의 + 기능/비기능 + 스코프 아웃
  RADIO    A  Architecture   주요 컴포넌트 + 책임 할당
-          D  Data Model     엔티티 + (복잡하면) Aggregate/VO/불변식
+          D  Data Model     엔티티 + 딥다이브(제품→DDD / 라이브러리→Library Design)
           I  Interface      경계를 넘는 계약 (API, props, 이벤트)
           O  Optimizations  NFR에서 도출된 항목만 (YAGNI)
 
@@ -39,7 +39,8 @@ Gate Out ─ V  Verification  Given/When/Then 핵심 3~5개
 ## 참조 스킬
 
 - `design-radio` — FE/BE별 RADIO 체크리스트
-- `design-ddd` — DDD 판단 기준 (Aggregate, Entity/VO, 불변식)
+- `design-ddd` — DDD 판단 기준 (비즈니스 도메인이 복잡할 때)
+- `design-library` — Library Design 판단 기준 (기술 라이브러리를 설계할 때)
 
 ## 핵심 원칙
 
@@ -184,6 +185,16 @@ AskUserQuestion:
   이미 정의한 것이 있으면 공유해주세요."
 ```
 
+**프로젝트 성격 판단** — 먼저 비즈니스 제품인지, 기술 라이브러리인지 판단한다:
+
+```
+Q: 이 코드의 주요 소비자는?
+├─ 최종 사용자 (비즈니스 제품) → 도메인 복잡도 판단 → DDD 딥다이브
+└─ 다른 개발자 (라이브러리/SDK/공유 모듈) → Library Design 딥다이브
+```
+
+#### 경로 A: DDD 딥다이브 (비즈니스 제품)
+
 **도메인 복잡도 판단** — 아래 중 2개 이상 해당하면 DDD 딥다이브:
 - 상태 전이가 있다 (예: Draft → Active → Expired)
 - 비즈니스 규칙이 3개 이상이다
@@ -199,6 +210,26 @@ AskUserQuestion:
 3. **불변식**: "각 Aggregate가 항상 보장해야 하는 조건은?"
 4. **책임 할당**: "이 판단에 필요한 정보를 누가 갖고 있는가?"
 5. **Domain Event**: "A 성공 후 B가 알아야 할 때 어떤 이벤트?"
+
+각 질문은 사용자와 AskUserQuestion으로 하나씩 확정한다.
+
+#### 경로 B: Library Design 딥다이브 (기술 라이브러리)
+
+**Library 복잡도 판단** — 아래 중 2개 이상 해당하면 Library Design 딥다이브:
+- 다른 개발자가 소비하는 코드이다 (패키지, SDK, 내부 공유 모듈)
+- 공개 API surface를 설계해야 한다
+- 하위 호환성/버전 관리를 고려해야 한다
+- 추상화 레벨 선택이 설계의 핵심이다
+
+**Library Design 딥다이브 시** (`design-library` skill 참조):
+
+추가 질문을 순서대로 진행한다:
+
+1. **Consumer Mental Model**: "이 라이브러리의 소비자는 누구이고, 알아야 할 핵심 개념은?"
+2. **API Surface**: "무엇을 공개하고, 무엇을 숨기는가? Progressive Disclosure 3계층은?"
+3. **Type Contract**: "타입으로 잘못된 사용을 막을 수 있는가?"
+4. **Extension Point**: "소비자가 동작을 확장해야 하는 지점과 패턴은?"
+5. **Stability**: "하위 호환성, 의존성 관리, deprecation 정책은?"
 
 각 질문은 사용자와 AskUserQuestion으로 하나씩 확정한다.
 
@@ -262,7 +293,9 @@ AskUserQuestion:
 
 1. **파일**: `.claude/docs/{project-name}/design.md`
 2. **구조**: C → R → (A) → D → I → (O) → V 각 산출물 정리
-3. **DDD 딥다이브 결과** (해당 시): Aggregate 구조, 불변식, Domain Event 포함
+3. **딥다이브 결과** (해당 시):
+   - DDD: Aggregate 구조, 불변식, Domain Event
+   - Library Design: API Surface, Type Contract, Extension Point, Stability
 
 ```
 AskUserQuestion:
